@@ -70,7 +70,7 @@ const openapiBase = {
   openapi: '3.0.3',
   info: {
     title: 'TV Shows API',
-    version: '1.0.0',
+    version: '1.0.4',
     description: 'CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs.'
   },
   servers: [], // populated dynamically per request
@@ -112,7 +112,24 @@ const openapiBase = {
 
     '/shows/query-jobs': { post:{ tags:['jobs'], summary:'Start simulated long‑running TV show query' } },
     '/jobs/{id}': { get:{ tags:['jobs'], summary:'Poll job status' }, delete:{ tags:['jobs'], summary:'Delete job' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'string'} }] },
-    '/jobs/{id}/download': { get:{ tags:['jobs'], summary:'Download job results (JSON)' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'string'} }] }
+    '/jobs/{id}/download': { get:{ tags:['jobs'], summary:'Download job results (JSON)' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'string'} }] },
+
+    // Episodes in a season
+    '/seasons/{id}/episodes': {
+      get: {
+        tags:['episodes'], summary:'List episodes for a specific season',
+        parameters:[{ name:'id', in:'path', required:true, schema:{type:'integer'} }]
+      }
+    },
+    '/shows/{showId}/seasons/{seasonNumber}/episodes': {
+      get: {
+        tags:['episodes'], summary:'List episodes by show+season_number',
+        parameters:[
+          { name:'showId', in:'path', required:true, schema:{type:'integer'} },
+          { name:'seasonNumber', in:'path', required:true, schema:{type:'integer'} }
+        ]
+      }
+    }
   }
 };
 
@@ -305,6 +322,36 @@ app.get('/shows/:showId/episodes', asyncH(async (req, res) => {
      WHERE s.show_id = ?
      ORDER BY s.season_number, e.air_date IS NULL, e.air_date, e.id`,
     [req.params.showId]
+  );
+  res.json(rows);
+}));
+
+// list episodes in a specific season by season id
+app.get('/seasons/:id/episodes', asyncH(async (req, res) => {
+  const [season] = await pool.execute('SELECT id FROM seasons WHERE id=?', [req.params.id]);
+  if (!season.length) return httpError(res, 404, 'season not found');
+  const [rows] = await pool.execute(
+    `SELECT e.id, e.title, e.description, e.air_date, e.season_id, s.season_number, s.show_id
+     FROM episodes e
+     JOIN seasons s ON s.id = e.season_id
+     WHERE e.season_id = ?
+     ORDER BY e.air_date IS NULL, e.air_date, e.id`,
+    [req.params.id]
+  );
+  res.json(rows);
+}));
+
+// list episodes via show id + season_number
+app.get('/shows/:showId/seasons/:seasonNumber/episodes', asyncH(async (req, res) => {
+  const seasonId = await getSeasonIdByShowAndNumber(req.params.showId, req.params.seasonNumber);
+  if (!seasonId) return httpError(res, 404, 'season not found for this show');
+  const [rows] = await pool.execute(
+    `SELECT e.id, e.title, e.description, e.air_date, e.season_id, s.season_number, s.show_id
+     FROM episodes e
+     JOIN seasons s ON s.id = e.season_id
+     WHERE e.season_id = ?
+     ORDER BY e.air_date IS NULL, e.air_date, e.id`,
+    [seasonId]
   );
   res.json(rows);
 }));
