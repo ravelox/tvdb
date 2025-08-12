@@ -1,0 +1,630 @@
+/**
+ * TV Shows CRUD API (Express + MySQL)
+ * - CRUD for shows, seasons, episodes, characters, actors
+ * - Many-to-many: episodes <-> characters
+ * - Simulated long-running "query jobs" with polling + download
+ * - Automatic database creation & schema initialization on server start (reads schema.sql)
+ * - OpenAPI discovery endpoint + optional Swagger UI
+ *
+ * Usage:
+ *   npm i
+ *   npm start
+ *
+ * Env:
+ *   PORT=3000
+ *   DB_HOST=localhost
+ *   DB_PORT=3306
+ *   DB_USER=root
+ *   DB_PASSWORD=yourpassword
+ *   DB_NAME=tvdb
+ */
+
+const express = require('express');
+const morgan = require('morgan');
+const mysql = require('mysql2/promise');
+const fs = require('fs');
+const path = require('path');
+const { randomUUID } = require('crypto');
+require('dotenv').config();
+
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_PORT = process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306;
+const DB_USER = process.env.DB_USER || 'root';
+const DB_PASSWORD = process.env.DB_PASSWORD || '';
+const DB_NAME = process.env.DB_NAME || 'tvdb';
+
+async function initDatabase() {
+  const conn = await mysql.createConnection({
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    multipleStatements: true,
+  });
+  try {
+    await conn.query(
+      `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    );
+    await conn.changeUser({ database: DB_NAME });
+    const schemaPath = path.resolve(__dirname, 'schema.sql');
+    const schemaSQL = fs.readFileSync(schemaPath, 'utf8');
+    await conn.query(schemaSQL);
+    console.log('[init] Database and schema ensured');
+  } finally {
+    await conn.end();
+  }
+}
+
+let pool;
+
+const app = express();
+app.use(express.json());
+app.use(morgan('dev'));
+
+function httpError(res, code, message) { return res.status(code).json({ error: message }); }
+const asyncH = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+// --------------------------- OpenAPI discovery ---------------------------
+const openapiBase = {
+  openapi: '3.0.3',
+  info: {
+    title: 'TV Shows API',
+    version: '1.0.0',
+    description: 'CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs.'
+  },
+  servers: [], // populated dynamically per request
+  tags: [
+    { name: 'health' }, { name: 'actors' }, { name: 'shows' }, { name: 'seasons' },
+    { name: 'episodes' }, { name: 'characters' }, { name: 'links' }, { name: 'jobs' }
+  ],
+  components: {
+    schemas: {
+      Actor: { type: 'object', properties: { id:{type:'integer'}, name:{type:'string'} } },
+      Show:  { type: 'object', properties: { id:{type:'integer'}, title:{type:'string'}, description:{type:'string'}, year:{type:'integer', nullable:true} } },
+      Season:{ type: 'object', properties: { id:{type:'integer'}, show_id:{type:'integer'}, season_number:{type:'integer'}, year:{type:'integer', nullable:true} } },
+      Episode:{ type: 'object', properties: { id:{type:'integer'}, season_id:{type:'integer'}, air_date:{type:'string', format:'date', nullable:true}, title:{type:'string'}, description:{type:'string', nullable:true} } },
+      Character:{ type: 'object', properties: { id:{type:'integer'}, show_id:{type:'integer'}, name:{type:'string'}, actor_id:{type:'integer', nullable:true} } },
+      JobStatus: { type:'object', properties: { id:{type:'string'}, status:{type:'string'}, eta_ms:{type:'integer'}, download_url:{type:'string', nullable:true} } }
+    }
+  },
+  paths: {
+    '/health': { get: { tags:['health'], summary:'Service/DB health', responses:{ '200':{ description:'OK' } } } },
+    '/init': { post: { tags:['health'], summary:'Initialize DB/schema', responses:{ '200':{ description:'Initialized' } } } },
+
+    '/actors': { get:{ tags:['actors'], summary:'List actors' }, post:{ tags:['actors'], summary:'Create actor' } },
+    '/actors/{id}': { get:{ tags:['actors'], summary:'Get actor' }, put:{ tags:['actors'], summary:'Update actor' }, delete:{ tags:['actors'], summary:'Delete actor' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'integer'} }] },
+
+    '/shows': { get:{ tags:['shows'], summary:'List shows' }, post:{ tags:['shows'], summary:'Create show' } },
+    '/shows/{id}': { get:{ tags:['shows'], summary:'Get show' }, put:{ tags:['shows'], summary:'Update show' }, delete:{ tags:['shows'], summary:'Delete show' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'integer'} }] },
+
+    '/shows/{showId}/seasons': { get:{ tags:['seasons'], summary:'List seasons for show' }, post:{ tags:['seasons'], summary:'Create season for show' }, parameters:[{ name:'showId', in:'path', required:true, schema:{type:'integer'} }] },
+    '/seasons/{id}': { get:{ tags:['seasons'], summary:'Get season' }, put:{ tags:['seasons'], summary:'Update season' }, delete:{ tags:['seasons'], summary:'Delete season' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'integer'} }] },
+
+    '/shows/{showId}/episodes': { get:{ tags:['episodes'], summary:'List episodes for show' }, post:{ tags:['episodes'], summary:'Create episode under a season by season_number' }, parameters:[{ name:'showId', in:'path', required:true, schema:{type:'integer'} }] },
+    '/episodes/{id}': { get:{ tags:['episodes'], summary:'Get episode (includes characters array)' }, put:{ tags:['episodes'], summary:'Update episode' }, delete:{ tags:['episodes'], summary:'Delete episode' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'integer'} }] },
+
+    '/shows/{showId}/characters': { get:{ tags:['characters'], summary:'List characters for show' }, post:{ tags:['characters'], summary:'Create character for show' }, parameters:[{ name:'showId', in:'path', required:true, schema:{type:'integer'} }] },
+    '/characters/{id}': { get:{ tags:['characters'], summary:'Get character' }, put:{ tags:['characters'], summary:'Update character' }, delete:{ tags:['characters'], summary:'Delete character' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'integer'} }] },
+
+    '/episodes/{episodeId}/characters': { get:{ tags:['links'], summary:'List characters in episode' }, post:{ tags:['links'], summary:'Link (or create+link) character to episode' }, parameters:[{ name:'episodeId', in:'path', required:true, schema:{type:'integer'} }] },
+    '/episodes/{episodeId}/characters/{characterId}': { delete:{ tags:['links'], summary:'Unlink character from episode' }, parameters:[{ name:'episodeId', in:'path', required:true, schema:{type:'integer'} }, { name:'characterId', in:'path', required:true, schema:{type:'integer'} }] },
+
+    '/shows/query-jobs': { post:{ tags:['jobs'], summary:'Start simulated long‑running TV show query' } },
+    '/jobs/{id}': { get:{ tags:['jobs'], summary:'Poll job status' }, delete:{ tags:['jobs'], summary:'Delete job' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'string'} }] },
+    '/jobs/{id}/download': { get:{ tags:['jobs'], summary:'Download job results (JSON)' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'string'} }] }
+  }
+};
+
+app.get(['/openapi.json', '/spec', '/.well-known/openapi.json'], (req, res) => {
+  const base = `${req.protocol}://${req.get('host')}`;
+  const doc = { ...openapiBase, servers: [{ url: base }] };
+  res.json(doc);
+});
+
+try {
+  const swaggerUi = require('swagger-ui-express');
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(null, {
+    explorer: true,
+    swaggerOptions: { url: '/openapi.json' }
+  }));
+  console.log('[docs] Swagger UI available at /docs');
+} catch (e) {
+  console.log('[docs] Install swagger-ui-express to enable /docs');
+}
+
+// --------------------------- Health ---------------------------
+app.get('/health', asyncH(async (_req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT 1 AS ok');
+    res.json({ ok: true, db: rows[0].ok === 1 });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+}));
+
+app.post('/init', asyncH(async (_req, res) => {
+  await initDatabase();
+  pool = mysql.createPool({
+    host: DB_HOST, port: DB_PORT, user: DB_USER, password: DB_PASSWORD, database: DB_NAME,
+    waitForConnections: true, connectionLimit: 10, queueLimit: 0
+  });
+  res.json({ status: 'initialized' });
+}));
+
+// --------------------------- ACTORS ---------------------------
+app.post('/actors', asyncH(async (req, res) => {
+  const { name } = req.body;
+  if (!name) return httpError(res, 400, 'name is required');
+  const [result] = await pool.execute('INSERT INTO actors (name) VALUES (?)', [name]);
+  const [rows] = await pool.execute('SELECT * FROM actors WHERE id = ?', [result.insertId]);
+  res.status(201).json(rows[0]);
+}));
+
+app.get('/actors', asyncH(async (_req, res) => {
+  const [rows] = await pool.execute('SELECT * FROM actors ORDER BY name');
+  res.json(rows);
+}));
+
+app.get('/actors/:id', asyncH(async (req, res) => {
+  const [rows] = await pool.execute('SELECT * FROM actors WHERE id = ?', [req.params.id]);
+  if (!rows.length) return httpError(res, 404, 'actor not found');
+  res.json(rows[0]);
+}));
+
+app.put('/actors/:id', asyncH(async (req, res) => {
+  const { name } = req.body;
+  if (!name) return httpError(res, 400, 'name is required');
+  const [r] = await pool.execute('UPDATE actors SET name=? WHERE id=?', [name, req.params.id]);
+  if (!r.affectedRows) return httpError(res, 404, 'actor not found');
+  const [rows] = await pool.execute('SELECT * FROM actors WHERE id = ?', [req.params.id]);
+  res.json(rows[0]);
+}));
+
+app.delete('/actors/:id', asyncH(async (req, res) => {
+  const [r] = await pool.execute('DELETE FROM actors WHERE id=?', [req.params.id]);
+  if (!r.affectedRows) return httpError(res, 404, 'actor not found');
+  res.status(204).send();
+}));
+
+// --------------------------- SHOWS ---------------------------
+app.post('/shows', asyncH(async (req, res) => {
+  const { title, description, year } = req.body;
+  if (!title) return httpError(res, 400, 'title is required');
+  const [result] = await pool.execute(
+    'INSERT INTO shows (title, description, year) VALUES (?, ?, ?)',
+    [title, description || null, year || null]
+  );
+  const [rows] = await pool.execute('SELECT * FROM shows WHERE id = ?', [result.insertId]);
+  res.status(201).json(rows[0]);
+}));
+
+app.get('/shows', asyncH(async (_req, res) => {
+  const [rows] = await pool.execute('SELECT * FROM shows ORDER BY year IS NULL, year, title');
+  res.json(rows);
+}));
+
+app.get('/shows/:id', asyncH(async (req, res) => {
+  const [rows] = await pool.execute('SELECT * FROM shows WHERE id = ?', [req.params.id]);
+  if (!rows.length) return httpError(res, 404, 'show not found');
+  res.json(rows[0]);
+}));
+
+app.put('/shows/:id', asyncH(async (req, res) => {
+  const { title, description, year } = req.body;
+  if (!title) return httpError(res, 400, 'title is required');
+  const [r] = await pool.execute(
+    'UPDATE shows SET title=?, description=?, year=? WHERE id=?',
+    [title, description || null, year || null, req.params.id]
+  );
+  if (!r.affectedRows) return httpError(res, 404, 'show not found');
+  const [rows] = await pool.execute('SELECT * FROM shows WHERE id = ?', [req.params.id]);
+  res.json(rows[0]);
+}));
+
+app.delete('/shows/:id', asyncH(async (req, res) => {
+  const [r] = await pool.execute('DELETE FROM shows WHERE id=?', [req.params.id]);
+  if (!r.affectedRows) return httpError(res, 404, 'show not found');
+  res.status(204).send();
+}));
+
+// --------------------------- SEASONS ---------------------------
+app.post('/shows/:showId/seasons', asyncH(async (req, res) => {
+  const { season_number, year } = req.body;
+  if (season_number == null) return httpError(res, 400, 'season_number is required');
+  const [show] = await pool.execute('SELECT id FROM shows WHERE id=?', [req.params.showId]);
+  if (!show.length) return httpError(res, 404, 'show not found');
+  const [result] = await pool.execute(
+    'INSERT INTO seasons (show_id, season_number, year) VALUES (?, ?, ?)',
+    [req.params.showId, season_number, year || null]
+  );
+  const [rows] = await pool.execute('SELECT * FROM seasons WHERE id=?', [result.insertId]);
+  res.status(201).json(rows[0]);
+}));
+
+app.get('/shows/:showId/seasons', asyncH(async (req, res) => {
+  const [rows] = await pool.execute(
+    'SELECT * FROM seasons WHERE show_id=? ORDER BY season_number',
+    [req.params.showId]
+  );
+  res.json(rows);
+}));
+
+app.get('/seasons/:id', asyncH(async (req, res) => {
+  const [rows] = await pool.execute('SELECT * FROM seasons WHERE id=?', [req.params.id]);
+  if (!rows.length) return httpError(res, 404, 'season not found');
+  res.json(rows[0]);
+}));
+
+app.put('/seasons/:id', asyncH(async (req, res) => {
+  const { season_number, year } = req.body;
+  if (season_number == null) return httpError(res, 400, 'season_number is required');
+  const [r] = await pool.execute(
+    'UPDATE seasons SET season_number=?, year=? WHERE id=?',
+    [season_number, year || null, req.params.id]
+  );
+  if (!r.affectedRows) return httpError(res, 404, 'season not found');
+  const [rows] = await pool.execute('SELECT * FROM seasons WHERE id=?', [req.params.id]);
+  res.json(rows[0]);
+}));
+
+app.delete('/seasons/:id', asyncH(async (req, res) => {
+  const [r] = await pool.execute('DELETE FROM seasons WHERE id=?', [req.params.id]);
+  if (!r.affectedRows) return httpError(res, 404, 'season not found');
+  res.status(204).send();
+}));
+
+// --------------------------- EPISODES ---------------------------
+async function getSeasonIdByShowAndNumber(showId, seasonNumber) {
+  const [rows] = await pool.execute(
+    'SELECT id FROM seasons WHERE show_id=? AND season_number=?',
+    [showId, seasonNumber]
+  );
+  return rows[0]?.id || null;
+}
+
+app.post('/shows/:showId/episodes', asyncH(async (req, res) => {
+  const { season_number, air_date, title, description } = req.body;
+  if (season_number == null) return httpError(res, 400, 'season_number is required');
+  if (!title) return httpError(res, 400, 'title is required');
+  const seasonId = await getSeasonIdByShowAndNumber(req.params.showId, season_number);
+  if (!seasonId) return httpError(res, 400, 'season does not exist for this show');
+  const [result] = await pool.execute(
+    'INSERT INTO episodes (season_id, air_date, title, description) VALUES (?, ?, ?, ?)',
+    [seasonId, air_date || null, title, description || null]
+  );
+  const [rows] = await pool.execute('SELECT * FROM episodes WHERE id=?', [result.insertId]);
+  res.status(201).json(rows[0]);
+}));
+
+app.get('/shows/:showId/episodes', asyncH(async (req, res) => {
+  const [rows] = await pool.execute(
+    `SELECT e.id, e.title, e.description, e.air_date, s.season_number, s.id as season_id
+     FROM episodes e
+     JOIN seasons s ON s.id = e.season_id
+     WHERE s.show_id = ?
+     ORDER BY s.season_number, e.air_date IS NULL, e.air_date, e.id`,
+    [req.params.showId]
+  );
+  res.json(rows);
+}));
+
+app.get('/episodes/:id', asyncH(async (req, res) => {
+  const [rows] = await pool.execute(
+    `SELECT e.*, s.season_number, s.show_id
+     FROM episodes e JOIN seasons s ON s.id=e.season_id
+     WHERE e.id=?`,
+    [req.params.id]
+  );
+  if (!rows.length) return httpError(res, 404, 'episode not found');
+  const ep = rows[0];
+  const [chars] = await pool.execute(
+    `SELECT c.id AS character_id, c.name AS character_name, a.name AS actor_name
+     FROM episode_characters ec
+     JOIN characters c ON c.id = ec.character_id
+     LEFT JOIN actors a ON a.id = c.actor_id
+     WHERE ec.episode_id = ?
+     ORDER BY c.name`,
+    [req.params.id]
+  );
+  ep.characters = chars;
+  res.json(ep);
+}));
+
+app.put('/episodes/:id', asyncH(async (req, res) => {
+  const { season_number, air_date, title, description } = req.body;
+  let seasonId = null;
+  if (season_number != null) {
+    const [cur] = await pool.execute(
+      'SELECT s.show_id FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?',
+      [req.params.id]
+    );
+    if (!cur.length) return httpError(res, 404, 'episode not found');
+    seasonId = await getSeasonIdByShowAndNumber(cur[0].show_id, season_number);
+    if (!seasonId) return httpError(res, 400, 'season does not exist for this show');
+  }
+  const fields = [];
+  const params = [];
+  if (seasonId != null) { fields.push('season_id=?'); params.push(seasonId); }
+  if (air_date !== undefined) { fields.push('air_date=?'); params.push(air_date || null); }
+  if (title !== undefined) { fields.push('title=?'); params.push(title || null); }
+  if (description !== undefined) { fields.push('description=?'); params.push(description || null); }
+  if (!fields.length) return httpError(res, 400, 'no fields to update');
+  params.push(req.params.id);
+  const [r] = await pool.execute(`UPDATE episodes SET ${fields.join(', ')} WHERE id=?`, params);
+  if (!r.affectedRows) return httpError(res, 404, 'episode not found');
+  const [rows] = await pool.execute(
+    `SELECT e.*, s.season_number, s.show_id FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?`,
+    [req.params.id]
+  );
+  res.json(rows[0]);
+}));
+
+app.delete('/episodes/:id', asyncH(async (req, res) => {
+  const [r] = await pool.execute('DELETE FROM episodes WHERE id=?', [req.params.id]);
+  if (!r.affectedRows) return httpError(res, 404, 'episode not found');
+  res.status(204).send();
+}));
+
+// --------------------------- CHARACTERS ---------------------------
+app.post('/shows/:showId/characters', asyncH(async (req, res) => {
+  const { name, actor_id, actor_name } = req.body;
+  if (!name) return httpError(res, 400, 'name is required');
+
+  const [show] = await pool.execute('SELECT id FROM shows WHERE id=?', [req.params.showId]);
+  if (!show.length) return httpError(res, 404, 'show not found');
+
+  let finalActorId = actor_id || null;
+  if (!finalActorId && actor_name) {
+    const [rows] = await pool.execute('SELECT id FROM actors WHERE name=?', [actor_name]);
+    if (rows.length) {
+      finalActorId = rows[0].id;
+    } else {
+      const [r] = await pool.execute('INSERT INTO actors (name) VALUES (?)', [actor_name]);
+      finalActorId = r.insertId;
+    }
+  }
+
+  const [result] = await pool.execute(
+    'INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?)',
+    [req.params.showId, name, finalActorId]
+  );
+  const [created] = await pool.execute(
+    `SELECT c.*, a.name as actor_name
+     FROM characters c LEFT JOIN actors a ON a.id=c.actor_id
+     WHERE c.id=?`,
+    [result.insertId]
+  );
+  res.status(201).json(created[0]);
+}));
+
+app.get('/shows/:showId/characters', asyncH(async (req, res) => {
+  const [rows] = await pool.execute(
+    `SELECT c.*, a.name as actor_name
+     FROM characters c LEFT JOIN actors a ON a.id=c.actor_id
+     WHERE c.show_id=?
+     ORDER BY c.name`,
+    [req.params.showId]
+  );
+  res.json(rows);
+}));
+
+app.get('/characters/:id', asyncH(async (req, res) => {
+  const [rows] = await pool.execute(
+    `SELECT c.*, a.name as actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id WHERE c.id=?`,
+    [req.params.id]
+  );
+  if (!rows.length) return httpError(res, 404, 'character not found');
+  res.json(rows[0]);
+}));
+
+app.put('/characters/:id', asyncH(async (req, res) => {
+  const { name, actor_id, actor_name } = req.body;
+  const fields = [];
+  const params = [];
+  if (name !== undefined) { fields.push('name=?'); params.push(name || null); }
+  let finalActorId = actor_id === undefined ? undefined : actor_id;
+  if (finalActorId === undefined && actor_name !== undefined) {
+    if (actor_name === null) {
+      finalActorId = null;
+    } else if (actor_name) {
+      const [rows] = await pool.execute('SELECT id FROM actors WHERE name=?', [actor_name]);
+      if (rows.length) finalActorId = rows[0].id;
+      else {
+        const [r] = await pool.execute('INSERT INTO actors (name) VALUES (?)', [actor_name]);
+        finalActorId = r.insertId;
+      }
+    }
+  }
+  if (finalActorId !== undefined) { fields.push('actor_id=?'); params.push(finalActorId); }
+  if (!fields.length) return httpError(res, 400, 'no fields to update');
+  params.push(req.params.id);
+  const [r] = await pool.execute(`UPDATE characters SET ${fields.join(', ')} WHERE id=?`, params);
+  if (!r.affectedRows) return httpError(res, 404, 'character not found');
+  const [rows] = await pool.execute(
+    `SELECT c.*, a.name as actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id WHERE c.id=?`,
+    [req.params.id]
+  );
+  res.json(rows[0]);
+}));
+
+app.delete('/characters/:id', asyncH(async (req, res) => {
+  const [r] = await pool.execute('DELETE FROM characters WHERE id=?', [req.params.id]);
+  if (!r.affectedRows) return httpError(res, 404, 'character not found');
+  res.status(204).send();
+}));
+
+// --------------------------- EPISODE-CHARACTER LINKS (many-to-many) ---------------------------
+async function getEpisodeWithShow(episodeId) {
+  const [rows] = await pool.execute(
+    `SELECT e.id AS episode_id, s.show_id, s.id AS season_id
+     FROM episodes e JOIN seasons s ON s.id = e.season_id
+     WHERE e.id = ?`,
+    [episodeId]
+  );
+  return rows[0] || null;
+}
+
+async function getCharacterForShow(characterId, showId) {
+  const [rows] = await pool.execute(
+    'SELECT * FROM characters WHERE id = ? AND show_id = ?',
+    [characterId, showId]
+  );
+  return rows[0] || null;
+}
+
+// Add character to episode
+app.post('/episodes/:episodeId/characters', asyncH(async (req, res) => {
+  const { character_id, character_name, actor_id, actor_name } = req.body || {};
+  const ep = await getEpisodeWithShow(req.params.episodeId);
+  if (!ep) return httpError(res, 404, 'episode not found');
+
+  let charId = character_id || null;
+  if (charId) {
+    const ok = await getCharacterForShow(charId, ep.show_id);
+    if (!ok) return httpError(res, 400, 'character does not belong to this show');
+  } else if (character_name) {
+    let finalActorId = actor_id || null;
+    if (!finalActorId && actor_name) {
+      const [aRows] = await pool.execute('SELECT id FROM actors WHERE name=?', [actor_name]);
+      if (aRows.length) finalActorId = aRows[0].id;
+      else {
+        const [ins] = await pool.execute('INSERT INTO actors (name) VALUES (?)', [actor_name]);
+        finalActorId = ins.insertId;
+      }
+    }
+    const [cRows] = await pool.execute(
+      'SELECT id FROM characters WHERE show_id=? AND name=?',
+      [ep.show_id, character_name]
+    );
+    if (cRows.length) charId = cRows[0].id;
+    else {
+      const [ins] = await pool.execute(
+        'INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?)',
+        [ep.show_id, character_name, finalActorId]
+      );
+      charId = ins.insertId;
+    }
+  } else {
+    return httpError(res, 400, 'character_id or character_name is required');
+  }
+
+  try {
+    const [result] = await pool.execute(
+      'INSERT INTO episode_characters (episode_id, character_id) VALUES (?, ?)',
+      [ep.episode_id, charId]
+    );
+    const [rows] = await pool.execute(
+      `SELECT ec.id, c.id AS character_id, c.name AS character_name, a.name AS actor_name
+       FROM episode_characters ec
+       JOIN characters c ON c.id = ec.character_id
+       LEFT JOIN actors a ON a.id = c.actor_id
+       WHERE ec.id = ?`,
+      [result.insertId]
+    );
+    res.status(201).json(rows[0]);
+  } catch (e) {
+    if (e && e.code === 'ER_DUP_ENTRY') return httpError(res, 409, 'character already linked to this episode');
+    throw e;
+  }
+}));
+
+// List characters for an episode
+app.get('/episodes/:episodeId/characters', asyncH(async (req, res) => {
+  const ep = await getEpisodeWithShow(req.params.episodeId);
+  if (!ep) return httpError(res, 404, 'episode not found');
+  const [rows] = await pool.execute(
+    `SELECT c.id AS character_id, c.name AS character_name, a.name AS actor_name
+     FROM episode_characters ec
+     JOIN characters c ON c.id = ec.character_id
+     LEFT JOIN actors a ON a.id = c.actor_id
+     WHERE ec.episode_id = ?
+     ORDER BY c.name`,
+    [ep.episode_id]
+  );
+  res.json(rows);
+}));
+
+// Remove character from episode
+app.delete('/episodes/:episodeId/characters/:characterId', asyncH(async (req, res) => {
+  const ep = await getEpisodeWithShow(req.params.episodeId);
+  if (!ep) return httpError(res, 404, 'episode not found');
+  const ok = await getCharacterForShow(req.params.characterId, ep.show_id);
+  if (!ok) return httpError(res, 400, 'character does not belong to this show');
+  const [r] = await pool.execute(
+    'DELETE FROM episode_characters WHERE episode_id=? AND character_id=?',
+    [ep.episode_id, req.params.characterId]
+  );
+  if (!r.affectedRows) return httpError(res, 404, 'link not found');
+  res.status(204).send();
+}));
+
+// --------------------------- JOBS ---------------------------
+const jobs = new Map();
+function nowISO(){ return new Date().toISOString(); }
+async function runShowQuery(filters){
+  const where = [];
+  const params = [];
+  if (filters.title) { where.push('title LIKE ?'); params.push(`%${filters.title}%`); }
+  if (filters.year_min != null) { where.push('year >= ?'); params.push(filters.year_min); }
+  if (filters.year_max != null) { where.push('year <= ?'); params.push(filters.year_max); }
+  const sql = `SELECT id, title, description, year FROM shows ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY year IS NULL, year, title`;
+  const [rows] = await pool.execute(sql, params);
+  return rows;
+}
+
+app.post('/shows/query-jobs', asyncH(async (req, res) => {
+  const { title, year_min, year_max, delay_ms } = req.body || {};
+  const jobId = randomUUID();
+  const delay = Number.isFinite(delay_ms) ? Math.max(500, Math.min(60000, Number(delay_ms))) : (2000 + Math.floor(Math.random()*6000));
+  const job = { id: jobId, status: 'queued', created_at: nowISO(), updated_at: nowISO(), eta_ms: delay, result: null, rowsCount: null, error: null, filename: `shows_query_${jobId}.json` };
+  jobs.set(jobId, job);
+  setTimeout(async () => {
+    const j = jobs.get(jobId); if (!j) return;
+    j.status = 'running'; j.updated_at = nowISO();
+    try {
+      const rows = await runShowQuery({ title, year_min, year_max });
+      const payload = Buffer.from(JSON.stringify({ filters: { title, year_min, year_max }, count: rows.length, rows }, null, 2));
+      j.result = payload; j.rowsCount = rows.length; j.status = 'completed'; j.updated_at = nowISO();
+    } catch (e) {
+      j.status = 'failed'; j.error = e && e.message ? e.message : 'unknown error'; j.updated_at = nowISO();
+    }
+  }, delay);
+  res.status(202).json({ job_id: jobId, status: job.status, eta_ms: job.eta_ms, poll_url: `/jobs/${jobId}`, download_url: `/jobs/${jobId}/download` });
+}));
+
+app.get('/jobs/:id', asyncH(async (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job) return httpError(res, 404, 'job not found');
+  res.json({ id: job.id, status: job.status, created_at: job.created_at, updated_at: job.updated_at, eta_ms: job.eta_ms, rows: job.rowsCount, error: job.error, download_url: job.status === 'completed' ? `/jobs/${job.id}/download` : null });
+}));
+
+app.get('/jobs/:id/download', asyncH(async (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job) return httpError(res, 404, 'job not found');
+  if (job.status !== 'completed') return httpError(res, 409, `job not ready (status=${job.status})`);
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="${job.filename}"`);
+  res.send(job.result);
+}));
+
+app.delete('/jobs/:id', asyncH(async (req, res) => {
+  if (!jobs.has(req.params.id)) return httpError(res, 404, 'job not found');
+  jobs.delete(req.params.id);
+  res.status(204).send();
+}));
+
+// --------------------------- bootstrap ---------------------------
+(async () => {
+  try {
+    await initDatabase();
+    pool = mysql.createPool({
+      host: DB_HOST, port: DB_PORT, user: DB_USER, password: DB_PASSWORD, database: DB_NAME,
+      waitForConnections: true, connectionLimit: 10, queueLimit: 0
+    });
+    app.listen(PORT, () => { console.log(`API listening on http://localhost:${PORT}`); });
+  } catch (err) {
+    console.error('Failed to initialize database', err);
+    process.exit(1);
+  }
+})();
