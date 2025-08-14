@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tvdb-storage-pvc
+  labels:
+    app: tvdb
+spec:
+  selector:
+    matchLabels:
+      app: tvdb
+  storageClassName: local-path
+  volumeName: tvdb-storage-pv
+  accessModes:
+  - ReadWriteOnce # This PVC can be mounted as read-write by a single node
+  resources:
+    requests:
+      storage: 1Gi # Request 5GB of storage

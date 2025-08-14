@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tvdb-storage-deployment
+  labels:
+    app: tvdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tvdb
+  template:
+    metadata:
+      labels:
+        app: tvdb
+    spec:
+      containers:
+      - name: mysql-container
+        image: mysql:latest
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: admin
+        ports:
+        - containerPort: 3306 # Default MySQL port
+        volumeMounts:
+        - name: tvdb-storage-volume
+          mountPath: /var/lib/mysql # Path inside the container where data is stored
+      volumes:
+      - name: tvdb-storage-volume
+        persistentVolumeClaim:
+          claimName: tvdb-storage-pvc # Name of the Persistent Volume Claim
