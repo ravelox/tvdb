@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tvdb-app
+  labels:
+    app: tvdb
+spec:
+  ports:
+  - name: tvdb-app-port
+    protocol: TCP
+    port: 3000
+  selector:
+    app: tvdb
