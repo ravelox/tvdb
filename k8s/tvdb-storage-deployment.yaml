@@ -5,7 +5,6 @@ metadata:
   labels:
     app: tvdb
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: tvdb
@@ -15,17 +14,17 @@ spec:
         app: tvdb
     spec:
       containers:
-      - name: mysql-container
-        image: mysql:latest
+      - image: mysql:9
+        name: mysql
         env:
         - name: MYSQL_ROOT_PASSWORD
           value: admin
         ports:
-        - containerPort: 3306 # Default MySQL port
+        - containerPort: 3306
         volumeMounts:
         - name: tvdb-storage-volume
-          mountPath: /var/lib/mysql # Path inside the container where data is stored
+          mountPath: /var/lib/mysql
       volumes:
       - name: tvdb-storage-volume
         persistentVolumeClaim:
-          claimName: tvdb-storage-pvc # Name of the Persistent Volume Claim
+          claimName: tvdb-storage-pvc
