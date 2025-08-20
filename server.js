@@ -70,7 +70,7 @@ const openapiBase = {
   openapi: '3.0.3',
   info: {
     title: 'TV Shows API',
-    version: '1.0.4',
+    version: '1.0.5',
     description: 'CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs.'
   },
   servers: [], // populated dynamically per request
@@ -111,6 +111,10 @@ const openapiBase = {
     '/episodes/{episodeId}/characters/{characterId}': { delete:{ tags:['links'], summary:'Unlink character from episode' }, parameters:[{ name:'episodeId', in:'path', required:true, schema:{type:'integer'} }, { name:'characterId', in:'path', required:true, schema:{type:'integer'} }] },
 
     '/shows/query-jobs': { post:{ tags:['jobs'], summary:'Start simulated long‑running TV show query' } },
+    '/seasons/query-jobs': { post:{ tags:['jobs'], summary:'Start simulated long‑running season query' } },
+    '/episodes/query-jobs': { post:{ tags:['jobs'], summary:'Start simulated long‑running episode query' } },
+    '/characters/query-jobs': { post:{ tags:['jobs'], summary:'Start simulated long‑running character query' } },
+    '/actors/query-jobs': { post:{ tags:['jobs'], summary:'Start simulated long‑running actor query' } },
     '/jobs/{id}': { get:{ tags:['jobs'], summary:'Poll job status' }, delete:{ tags:['jobs'], summary:'Delete job' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'string'} }] },
     '/jobs/{id}/download': { get:{ tags:['jobs'], summary:'Download job results (JSON)' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'string'} }] },
 
@@ -620,6 +624,49 @@ async function runShowQuery(filters){
   return rows;
 }
 
+async function runSeasonQuery(filters){
+  const where = [];
+  const params = [];
+  if (filters.show_id != null) { where.push('show_id = ?'); params.push(filters.show_id); }
+  if (filters.season_number != null) { where.push('season_number = ?'); params.push(filters.season_number); }
+  if (filters.year_min != null) { where.push('year >= ?'); params.push(filters.year_min); }
+  if (filters.year_max != null) { where.push('year <= ?'); params.push(filters.year_max); }
+  const sql = `SELECT id, show_id, season_number, year FROM seasons ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY show_id, season_number`;
+  const [rows] = await pool.execute(sql, params);
+  return rows;
+}
+
+async function runEpisodeQuery(filters){
+  const where = [];
+  const params = [];
+  if (filters.show_id != null) { where.push('s.show_id = ?'); params.push(filters.show_id); }
+  if (filters.season_number != null) { where.push('s.season_number = ?'); params.push(filters.season_number); }
+  if (filters.title) { where.push('e.title LIKE ?'); params.push(`%${filters.title}%`); }
+  const sql = `SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id = e.season_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY e.air_date IS NULL, e.air_date, e.id`;
+  const [rows] = await pool.execute(sql, params);
+  return rows;
+}
+
+async function runCharacterQuery(filters){
+  const where = [];
+  const params = [];
+  if (filters.show_id != null) { where.push('show_id = ?'); params.push(filters.show_id); }
+  if (filters.actor_id != null) { where.push('actor_id = ?'); params.push(filters.actor_id); }
+  if (filters.name) { where.push('name LIKE ?'); params.push(`%${filters.name}%`); }
+  const sql = `SELECT id, show_id, name, actor_id FROM characters ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY name`;
+  const [rows] = await pool.execute(sql, params);
+  return rows;
+}
+
+async function runActorQuery(filters){
+  const where = [];
+  const params = [];
+  if (filters.name) { where.push('name LIKE ?'); params.push(`%${filters.name}%`); }
+  const sql = `SELECT id, name FROM actors ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY name`;
+  const [rows] = await pool.execute(sql, params);
+  return rows;
+}
+
 app.post('/shows/query-jobs', asyncH(async (req, res) => {
   const { title, year_min, year_max, delay_ms } = req.body || {};
   const jobId = randomUUID();
@@ -632,6 +679,86 @@ app.post('/shows/query-jobs', asyncH(async (req, res) => {
     try {
       const rows = await runShowQuery({ title, year_min, year_max });
       const payload = Buffer.from(JSON.stringify({ filters: { title, year_min, year_max }, count: rows.length, rows }, null, 2));
+      j.result = payload; j.rowsCount = rows.length; j.status = 'completed'; j.updated_at = nowISO();
+    } catch (e) {
+      j.status = 'failed'; j.error = e && e.message ? e.message : 'unknown error'; j.updated_at = nowISO();
+    }
+  }, delay);
+  res.status(202).json({ job_id: jobId, status: job.status, eta_ms: job.eta_ms, poll_url: `/jobs/${jobId}`, download_url: `/jobs/${jobId}/download` });
+}));
+
+app.post('/seasons/query-jobs', asyncH(async (req, res) => {
+  const { show_id, season_number, year_min, year_max, delay_ms } = req.body || {};
+  const jobId = randomUUID();
+  const delay = Number.isFinite(delay_ms) ? Math.max(500, Math.min(60000, Number(delay_ms))) : (2000 + Math.floor(Math.random()*6000));
+  const job = { id: jobId, status: 'queued', created_at: nowISO(), updated_at: nowISO(), eta_ms: delay, result: null, rowsCount: null, error: null, filename: `seasons_query_${jobId}.json` };
+  jobs.set(jobId, job);
+  setTimeout(async () => {
+    const j = jobs.get(jobId); if (!j) return;
+    j.status = 'running'; j.updated_at = nowISO();
+    try {
+      const rows = await runSeasonQuery({ show_id, season_number, year_min, year_max });
+      const payload = Buffer.from(JSON.stringify({ filters: { show_id, season_number, year_min, year_max }, count: rows.length, rows }, null, 2));
+      j.result = payload; j.rowsCount = rows.length; j.status = 'completed'; j.updated_at = nowISO();
+    } catch (e) {
+      j.status = 'failed'; j.error = e && e.message ? e.message : 'unknown error'; j.updated_at = nowISO();
+    }
+  }, delay);
+  res.status(202).json({ job_id: jobId, status: job.status, eta_ms: job.eta_ms, poll_url: `/jobs/${jobId}`, download_url: `/jobs/${jobId}/download` });
+}));
+
+app.post('/episodes/query-jobs', asyncH(async (req, res) => {
+  const { show_id, season_number, title, delay_ms } = req.body || {};
+  const jobId = randomUUID();
+  const delay = Number.isFinite(delay_ms) ? Math.max(500, Math.min(60000, Number(delay_ms))) : (2000 + Math.floor(Math.random()*6000));
+  const job = { id: jobId, status: 'queued', created_at: nowISO(), updated_at: nowISO(), eta_ms: delay, result: null, rowsCount: null, error: null, filename: `episodes_query_${jobId}.json` };
+  jobs.set(jobId, job);
+  setTimeout(async () => {
+    const j = jobs.get(jobId); if (!j) return;
+    j.status = 'running'; j.updated_at = nowISO();
+    try {
+      const rows = await runEpisodeQuery({ show_id, season_number, title });
+      const payload = Buffer.from(JSON.stringify({ filters: { show_id, season_number, title }, count: rows.length, rows }, null, 2));
+      j.result = payload; j.rowsCount = rows.length; j.status = 'completed'; j.updated_at = nowISO();
+    } catch (e) {
+      j.status = 'failed'; j.error = e && e.message ? e.message : 'unknown error'; j.updated_at = nowISO();
+    }
+  }, delay);
+  res.status(202).json({ job_id: jobId, status: job.status, eta_ms: job.eta_ms, poll_url: `/jobs/${jobId}`, download_url: `/jobs/${jobId}/download` });
+}));
+
+app.post('/characters/query-jobs', asyncH(async (req, res) => {
+  const { show_id, name, actor_id, delay_ms } = req.body || {};
+  const jobId = randomUUID();
+  const delay = Number.isFinite(delay_ms) ? Math.max(500, Math.min(60000, Number(delay_ms))) : (2000 + Math.floor(Math.random()*6000));
+  const job = { id: jobId, status: 'queued', created_at: nowISO(), updated_at: nowISO(), eta_ms: delay, result: null, rowsCount: null, error: null, filename: `characters_query_${jobId}.json` };
+  jobs.set(jobId, job);
+  setTimeout(async () => {
+    const j = jobs.get(jobId); if (!j) return;
+    j.status = 'running'; j.updated_at = nowISO();
+    try {
+      const rows = await runCharacterQuery({ show_id, name, actor_id });
+      const payload = Buffer.from(JSON.stringify({ filters: { show_id, name, actor_id }, count: rows.length, rows }, null, 2));
+      j.result = payload; j.rowsCount = rows.length; j.status = 'completed'; j.updated_at = nowISO();
+    } catch (e) {
+      j.status = 'failed'; j.error = e && e.message ? e.message : 'unknown error'; j.updated_at = nowISO();
+    }
+  }, delay);
+  res.status(202).json({ job_id: jobId, status: job.status, eta_ms: job.eta_ms, poll_url: `/jobs/${jobId}`, download_url: `/jobs/${jobId}/download` });
+}));
+
+app.post('/actors/query-jobs', asyncH(async (req, res) => {
+  const { name, delay_ms } = req.body || {};
+  const jobId = randomUUID();
+  const delay = Number.isFinite(delay_ms) ? Math.max(500, Math.min(60000, Number(delay_ms))) : (2000 + Math.floor(Math.random()*6000));
+  const job = { id: jobId, status: 'queued', created_at: nowISO(), updated_at: nowISO(), eta_ms: delay, result: null, rowsCount: null, error: null, filename: `actors_query_${jobId}.json` };
+  jobs.set(jobId, job);
+  setTimeout(async () => {
+    const j = jobs.get(jobId); if (!j) return;
+    j.status = 'running'; j.updated_at = nowISO();
+    try {
+      const rows = await runActorQuery({ name });
+      const payload = Buffer.from(JSON.stringify({ filters: { name }, count: rows.length, rows }, null, 2));
       j.result = payload; j.rowsCount = rows.length; j.status = 'completed'; j.updated_at = nowISO();
     } catch (e) {
       j.status = 'failed'; j.error = e && e.message ? e.message : 'unknown error'; j.updated_at = nowISO();

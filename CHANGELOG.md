@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - 2025-08-12
+### Added
+- Query jobs duplicated for seasons, episodes, characters, and actors.
+### Changed
+- OpenAPI `info.version` and package version bumped to 1.0.5.
+
 ## [1.0.4] - 2025-08-12
 ### Added
 - `CHANGELOG.md` with version history.
