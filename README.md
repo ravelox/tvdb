@@ -104,11 +104,13 @@ curl -i -X DELETE "$API/episodes/$EPISODE_ID/characters/$CHAR_ID"
 ```
 
 ### Simulated long‑running query jobs
+Supports shows, seasons, episodes, characters, and actors.
 ```bash
 JOB_ID=$(curl -s -X POST "$API/shows/query-jobs" -H 'Content-Type: application/json' -d '{"title":"Doctor","year_min":1900,"year_max":2100,"delay_ms":2500}' | jq -r '.job_id'); echo "$JOB_ID"
 curl -s "$API/jobs/$JOB_ID" | jq .
 curl -s -L "$API/jobs/$JOB_ID/download" -o shows_query_${JOB_ID}.json && jq . shows_query_${JOB_ID}.json | head
 curl -i -X DELETE "$API/jobs/$JOB_ID"
+# Endpoints also exist at /seasons/query-jobs, /episodes/query-jobs, /characters/query-jobs, and /actors/query-jobs
 ```
 
 ### Changelog
