@@ -83,7 +83,7 @@ const openapiBase = {
       Actor: { type: 'object', properties: { id:{type:'integer'}, name:{type:'string'} } },
       Show:  { type: 'object', properties: { id:{type:'integer'}, title:{type:'string'}, description:{type:'string'}, year:{type:'integer', nullable:true} } },
       Season:{ type: 'object', properties: { id:{type:'integer'}, show_id:{type:'integer'}, season_number:{type:'integer'}, year:{type:'integer', nullable:true} } },
-      Episode:{ type: 'object', properties: { id:{type:'integer'}, season_id:{type:'integer'}, air_date:{type:'string', format:'date', nullable:true}, title:{type:'string'}, description:{type:'string', nullable:true} } },
+      Episode:{ type: 'object', properties: { id:{type:'integer'}, season_id:{type:'integer'}, show_id:{type:'integer'}, air_date:{type:'string', format:'date', nullable:true}, title:{type:'string'}, description:{type:'string', nullable:true} } },
       Character:{ type: 'object', properties: { id:{type:'integer'}, show_id:{type:'integer'}, name:{type:'string'}, actor_id:{type:'integer', nullable:true} } },
       JobStatus: { type:'object', properties: { id:{type:'string'}, status:{type:'string'}, eta_ms:{type:'integer'}, download_url:{type:'string', nullable:true} } }
     }
@@ -317,13 +317,18 @@ app.post('/shows/:showId/episodes', asyncH(async (req, res) => {
     'INSERT INTO episodes (season_id, air_date, title, description) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE air_date=VALUES(air_date), description=VALUES(description), id=LAST_INSERT_ID(id)',
     [seasonId, air_date || null, title, description || null]
   );
-  const [rows] = await pool.execute('SELECT * FROM episodes WHERE id=?', [result.insertId]);
+  const [rows] = await pool.execute(
+    `SELECT e.*, s.season_number, s.show_id
+     FROM episodes e JOIN seasons s ON s.id=e.season_id
+     WHERE e.id=?`,
+    [result.insertId]
+  );
   res.status(201).json(rows[0]);
 }));
 
 app.get('/shows/:showId/episodes', asyncH(async (req, res) => {
   const [rows] = await pool.execute(
-    `SELECT e.id, e.title, e.description, e.air_date, s.season_number, s.id as season_id
+    `SELECT e.id, e.title, e.description, e.air_date, s.season_number, s.id as season_id, s.show_id
      FROM episodes e
      JOIN seasons s ON s.id = e.season_id
      WHERE s.show_id = ?
