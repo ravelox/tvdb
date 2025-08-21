@@ -94,7 +94,15 @@ printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title descript
   fi
   EP_ID=$(curl -s "$API/shows/$SHOW_ID/episodes" | jq -r --arg t "$title" --argjson s "$season" 'map(select(.season_number==$s and .title==$t)) | (.[0].id // empty)')
   [ -z "$EP_ID" ] && { echo "Could not resolve episode id for season $season"; continue; }
-  for char in John\ Crichton "Aeryn Sun" "Ka D'Argo" Chiana; do
+
+  case "$season" in
+    1) CHARS="John Crichton|Aeryn Sun|Ka D'Argo" ;;
+    2|3) CHARS="John Crichton|Aeryn Sun|Ka D'Argo|Chiana" ;;
+    4) CHARS="John Crichton|Chiana" ;;
+    *) CHARS="" ;;
+  esac
+  echo "$CHARS" | tr '|' '\n' | while IFS= read -r char; do
+    [ -z "$char" ] && continue
     echo "  Linking $char"
     curl -s -X POST "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$char" '{character_name:$n}')" >/dev/null
   done

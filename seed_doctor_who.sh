@@ -212,7 +212,7 @@ printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title descript
   # Companions (pipe-separated), iterate line-by-line
   case "$season" in
     1) COMP="Susan Foreman|Ian Chesterton|Barbara Wright" ;;
-    2) COMP="Ian Chesterton|Barbara Wright" ;;
+    2) COMP="Susan Foreman|Ian Chesterton|Barbara Wright" ;;
     7) COMP="Brigadier Lethbridge-Stewart" ;;
     11|12|13|14) COMP="Sarah Jane Smith" ;;
     15) COMP="Leela" ;;
