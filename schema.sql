@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS episodes (
   title VARCHAR(255) NOT NULL,
   description TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_episode_per_season (season_id, title),
   KEY idx_episodes_season (season_id),
   CONSTRAINT fk_episodes_season FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
