@@ -177,7 +177,10 @@ app.post('/init', asyncH(async (_req, res) => {
 app.post('/actors', asyncH(async (req, res) => {
   const { name } = req.body;
   if (!name) return httpError(res, 400, 'name is required');
-  const [result] = await pool.execute('INSERT INTO actors (name) VALUES (?)', [name]);
+  const [result] = await pool.execute(
+    'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
+    [name]
+  );
   const [rows] = await pool.execute('SELECT * FROM actors WHERE id = ?', [result.insertId]);
   res.status(201).json(rows[0]);
 }));
@@ -213,7 +216,7 @@ app.post('/shows', asyncH(async (req, res) => {
   const { title, description, year } = req.body;
   if (!title) return httpError(res, 400, 'title is required');
   const [result] = await pool.execute(
-    'INSERT INTO shows (title, description, year) VALUES (?, ?, ?)',
+    'INSERT INTO shows (title, description, year) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE description=VALUES(description), year=VALUES(year), id=LAST_INSERT_ID(id)',
     [title, description || null, year || null]
   );
   const [rows] = await pool.execute('SELECT * FROM shows WHERE id = ?', [result.insertId]);
@@ -256,7 +259,7 @@ app.post('/shows/:showId/seasons', asyncH(async (req, res) => {
   const [show] = await pool.execute('SELECT id FROM shows WHERE id=?', [req.params.showId]);
   if (!show.length) return httpError(res, 404, 'show not found');
   const [result] = await pool.execute(
-    'INSERT INTO seasons (show_id, season_number, year) VALUES (?, ?, ?)',
+    'INSERT INTO seasons (show_id, season_number, year) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE year=VALUES(year), id=LAST_INSERT_ID(id)',
     [req.params.showId, season_number, year || null]
   );
   const [rows] = await pool.execute('SELECT * FROM seasons WHERE id=?', [result.insertId]);
@@ -311,7 +314,7 @@ app.post('/shows/:showId/episodes', asyncH(async (req, res) => {
   const seasonId = await getSeasonIdByShowAndNumber(req.params.showId, season_number);
   if (!seasonId) return httpError(res, 400, 'season does not exist for this show');
   const [result] = await pool.execute(
-    'INSERT INTO episodes (season_id, air_date, title, description) VALUES (?, ?, ?, ?)',
+    'INSERT INTO episodes (season_id, air_date, title, description) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE air_date=VALUES(air_date), description=VALUES(description), id=LAST_INSERT_ID(id)',
     [seasonId, air_date || null, title, description || null]
   );
   const [rows] = await pool.execute('SELECT * FROM episodes WHERE id=?', [result.insertId]);
@@ -427,17 +430,15 @@ app.post('/shows/:showId/characters', asyncH(async (req, res) => {
 
   let finalActorId = actor_id || null;
   if (!finalActorId && actor_name) {
-    const [rows] = await pool.execute('SELECT id FROM actors WHERE name=?', [actor_name]);
-    if (rows.length) {
-      finalActorId = rows[0].id;
-    } else {
-      const [r] = await pool.execute('INSERT INTO actors (name) VALUES (?)', [actor_name]);
-      finalActorId = r.insertId;
-    }
+    const [r] = await pool.execute(
+      'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
+      [actor_name]
+    );
+    finalActorId = r.insertId;
   }
 
   const [result] = await pool.execute(
-    'INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?)',
+    'INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)',
     [req.params.showId, name, finalActorId]
   );
   const [created] = await pool.execute(
@@ -479,12 +480,11 @@ app.put('/characters/:id', asyncH(async (req, res) => {
     if (actor_name === null) {
       finalActorId = null;
     } else if (actor_name) {
-      const [rows] = await pool.execute('SELECT id FROM actors WHERE name=?', [actor_name]);
-      if (rows.length) finalActorId = rows[0].id;
-      else {
-        const [r] = await pool.execute('INSERT INTO actors (name) VALUES (?)', [actor_name]);
-        finalActorId = r.insertId;
-      }
+      const [r] = await pool.execute(
+        'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
+        [actor_name]
+      );
+      finalActorId = r.insertId;
     }
   }
   if (finalActorId !== undefined) { fields.push('actor_id=?'); params.push(finalActorId); }
@@ -540,29 +540,25 @@ app.post('/episodes/:episodeId/characters', asyncH(async (req, res) => {
       const [aRows] = await pool.execute('SELECT id FROM actors WHERE name=?', [actor_name]);
       if (aRows.length) finalActorId = aRows[0].id;
       else {
-        const [ins] = await pool.execute('INSERT INTO actors (name) VALUES (?)', [actor_name]);
+        const [ins] = await pool.execute(
+          'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
+          [actor_name]
+        );
         finalActorId = ins.insertId;
       }
     }
-    const [cRows] = await pool.execute(
-      'SELECT id FROM characters WHERE show_id=? AND name=?',
-      [ep.show_id, character_name]
+    const [insChar] = await pool.execute(
+      'INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)',
+      [ep.show_id, character_name, finalActorId]
     );
-    if (cRows.length) charId = cRows[0].id;
-    else {
-      const [ins] = await pool.execute(
-        'INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?)',
-        [ep.show_id, character_name, finalActorId]
-      );
-      charId = ins.insertId;
-    }
+    charId = insChar.insertId;
   } else {
     return httpError(res, 400, 'character_id or character_name is required');
   }
 
   try {
     const [result] = await pool.execute(
-      'INSERT INTO episode_characters (episode_id, character_id) VALUES (?, ?)',
+      'INSERT INTO episode_characters (episode_id, character_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)',
       [ep.episode_id, charId]
     );
     const [rows] = await pool.execute(
