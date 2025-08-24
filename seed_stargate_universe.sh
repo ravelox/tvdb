@@ -77,7 +77,9 @@ done
 # --- known episodes ---
 read -r -d '' EPISODES <<'EOF2' || true
 1|2009-10-02|Air (Part 1)|Series premiere.
+1|2009-10-09|Air (Part 2)|Continuation of the premiere.
 2|2010-09-28|Intervention|Season 2 opener.
+2|2010-10-05|Aftermath|Season 2 continues.
 EOF2
 
 existing_eps=$(curl -s "$API/shows/$SHOW_ID/episodes")

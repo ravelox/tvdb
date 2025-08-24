@@ -81,7 +81,9 @@ done
 # --- known episodes ---
 read -r -d '' EPISODES <<'EOF2' || true
 1|2015-12-14|Dulcinea|Series premiere.
+1|2015-12-22|The Big Empty|Holden's crew fights for survival.
 2|2017-02-01|Safe|Season 2 opener.
+2|2017-02-08|Doors & Corners|Season 2 continues.
 3|2018-04-11|Fight or Flight|Season 3 opener.
 4|2019-12-13|New Terra|Season 4 opener.
 5|2020-12-16|Exodus|Season 5 opener.

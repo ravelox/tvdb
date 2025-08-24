@@ -154,7 +154,9 @@ done
 # --- episodes: known season openers ---
 read -r -d '' EPISODES <<'EOF' || true
 1|1963-11-23|An Unearthly Child|Series premiere.
+1|1963-12-21|The Daleks|First Dalek story.
 2|1964-10-31|Planet of Giants|Season 2 opener.
+2|1964-11-21|The Dalek Invasion of Earth|Daleks invade Earth.
 3|1965-09-11|Galaxy 4: Four Hundred Dawns|Season 3 opener.
 4|1966-09-10|The Smugglers|Season 4 opener.
 5|1967-09-02|The Tomb of the Cybermen|Season 5 opener.
