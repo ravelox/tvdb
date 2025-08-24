@@ -151,85 +151,62 @@ printf '%s\n' "$CHAR_TO_ACTOR" | while IFS='|' read -r char actor; do
   fi
 done
 
-# --- episodes: one season-opener per season ---
-read -r -d '' EPISODES <<'EOF' || true
-1|1963-11-23|An Unearthly Child|Series premiere.
-2|1964-10-31|Planet of Giants|Season 2 opener.
-3|1965-09-11|Galaxy 4: Four Hundred Dawns|Season 3 opener.
-4|1966-09-10|The Smugglers|Season 4 opener.
-5|1967-09-02|The Tomb of the Cybermen|Season 5 opener.
-6|1968-08-10|The Dominators|Season 6 opener.
-7|1970-01-03|Spearhead from Space|Season 7 opener.
-8|1971-01-02|Terror of the Autons|Season 8 opener.
-9|1972-01-01|Day of the Daleks|Season 9 opener.
-10|1972-12-30|The Three Doctors|Season 10 opener.
-11|1973-12-15|The Time Warrior|Season 11 opener.
-12|1974-12-28|Robot|Season 12 opener.
-13|1975-08-30|Terror of the Zygons|Season 13 opener.
-14|1976-09-04|The Masque of Mandragora|Season 14 opener.
-15|1977-09-03|Horror of Fang Rock|Season 15 opener.
-16|1978-09-02|The Ribos Operation|Season 16 opener.
-17|1979-09-01|Destiny of the Daleks|Season 17 opener.
-18|1980-08-30|The Leisure Hive|Season 18 opener.
-19|1982-01-04|Castrovalva|Season 19 opener.
-20|1983-01-03|Arc of Infinity|Season 20 opener.
-21|1984-01-05|Warriors of the Deep|Season 21 opener.
-22|1985-01-05|Attack of the Cybermen|Season 22 opener.
-23|1986-09-06|The Trial of a Time Lord: The Mysterious Planet (Pt 1)|Season 23 opener.
-24|1987-09-07|Time and the Rani|Season 24 opener.
-25|1988-10-05|Remembrance of the Daleks|Season 25 opener.
-26|1989-09-06|Battlefield|Season 26 opener.
-EOF
-
+# --- episodes: create 3 per season ---
 echo "Ensuring episodes..."
-existing_eps=$(curl -s "$API/shows/$SHOW_ID/episodes")
-printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title description; do
-  [ -z "$season" ] && continue
-  if echo "$existing_eps" | jq -e       --arg t "$title" --argjson s "$season"       'map(select(.season_number == $s and .title == $t)) | length > 0' >/dev/null; then
-    echo "  Episode exists (S${season}): $title"
-  else
-    echo "  Creating episode (S${season}): $title"
-    jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description"       '{season_number:$season, air_date:$date, title:$t, description:$d}'     | curl -s -X POST "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
-  fi
+for season in $(seq 1 26); do
+  y="$(lookup_year "$season" || true)"
+  eps=$(curl -s "$API/shows/$SHOW_ID/seasons/$season/episodes")
+  for ep in 1 2 3; do
+    title="S${season}E${ep}"
+    air_date=$(printf "%s-01-%02d" "$y" $((ep*7-6)))
+    description="Episode ${ep} of season ${season}."
+    if echo "$eps" | jq -e --arg t "$title" 'map(.title)|index($t)' >/dev/null; then
+      echo "  Episode exists (S${season}E${ep}): $title"
+    else
+      echo "  Creating episode (S${season}E${ep}): $title"
+      jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description" '{season_number:$season, air_date:$date, title:$t, description:$d}' | curl -s -X POST "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
+      eps=$(curl -s "$API/shows/$SHOW_ID/seasons/$season/episodes")
+    fi
 
-  # Link characters to each opener (no arrays)
-  EP_ID=$(curl -s "$API/shows/$SHOW_ID/episodes" | jq -r --arg t "$title" --argjson s "$season"     'map(select(.season_number == $s and .title == $t)) | (.[0].id // empty)')
-  [ -z "$EP_ID" ] && { echo "  Could not resolve episode id for season $season"; continue; }
+    # Link characters to each episode
+    EP_ID=$(echo "$eps" | jq -r --arg t "$title" 'map(select(.title==$t)) | (.[0].id // empty)')
+    [ -z "$EP_ID" ] && { echo "  Could not resolve episode id for season $season"; continue; }
 
-  # Doctor for this season
-  case "$season" in
-    1|2|3|4)   DOC="The Doctor (First Doctor)" ;;
-    5|6)       DOC="The Doctor (Second Doctor)" ;;
-    7|8|9|10|11) DOC="The Doctor (Third Doctor)" ;;
-    12|13|14|15|16|17|18) DOC="The Doctor (Fourth Doctor)" ;;
-    19|20|21) DOC="The Doctor (Fifth Doctor)" ;;
-    22|23)    DOC="The Doctor (Sixth Doctor)" ;;
-    *)        DOC="The Doctor (Seventh Doctor)" ;;
-  esac
-  echo "  S$season: linking $DOC -> "$title""
-  curl -s -X POST "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json'     -d "$(jq -nc --arg n "$DOC" '{character_name:$n}')" >/dev/null
+    # Doctor for this season
+    case "$season" in
+      1|2|3|4)   DOC="The Doctor (First Doctor)" ;;
+      5|6)       DOC="The Doctor (Second Doctor)" ;;
+      7|8|9|10|11) DOC="The Doctor (Third Doctor)" ;;
+      12|13|14|15|16|17|18) DOC="The Doctor (Fourth Doctor)" ;;
+      19|20|21) DOC="The Doctor (Fifth Doctor)" ;;
+      22|23)    DOC="The Doctor (Sixth Doctor)" ;;
+      *)        DOC="The Doctor (Seventh Doctor)" ;;
+    esac
+    echo "  S$season: linking $DOC -> $title"
+    curl -s -X POST "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$DOC" '{character_name:$n}')" >/dev/null
 
-  # Companions (pipe-separated), iterate line-by-line
-  case "$season" in
-    1) COMP="Susan Foreman|Ian Chesterton|Barbara Wright" ;;
-    2) COMP="Susan Foreman|Ian Chesterton|Barbara Wright" ;;
-    7) COMP="Brigadier Lethbridge-Stewart" ;;
-    11|12|13|14) COMP="Sarah Jane Smith" ;;
-    15) COMP="Leela" ;;
-    16|17|18) COMP="Romana|K9" ;;
-    19|20) COMP="Nyssa" ;;
-    22|23) COMP="Peri Brown" ;;
-    24) COMP="Mel Bush" ;;
-    25|26) COMP="Ace" ;;
-    *) COMP="" ;;
-  esac
-  if [ -n "$COMP" ]; then
-    echo "$COMP" | tr '|' '\n' | while IFS= read -r c; do
-      [ -z "$c" ] && continue
-      echo "    + $c"
-      curl -s -X POST "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json'         -d "$(jq -nc --arg n "$c" '{character_name:$n}')" >/dev/null
-    done
-  fi
+    # Companions (pipe-separated), iterate line-by-line
+    case "$season" in
+      1) COMP="Susan Foreman|Ian Chesterton|Barbara Wright" ;;
+      2) COMP="Susan Foreman|Ian Chesterton|Barbara Wright" ;;
+      7) COMP="Brigadier Lethbridge-Stewart" ;;
+      11|12|13|14) COMP="Sarah Jane Smith" ;;
+      15) COMP="Leela" ;;
+      16|17|18) COMP="Romana|K9" ;;
+      19|20) COMP="Nyssa" ;;
+      22|23) COMP="Peri Brown" ;;
+      24) COMP="Mel Bush" ;;
+      25|26) COMP="Ace" ;;
+      *) COMP="" ;;
+    esac
+    if [ -n "$COMP" ]; then
+      echo "$COMP" | tr '|' '\n' | while IFS= read -r c; do
+        [ -z "$c" ] && continue
+        echo "    + $c"
+        curl -s -X POST "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$c" '{character_name:$n}')" >/dev/null
+      done
+    fi
+  done
 done
 
 echo "Seeding complete with episode-character links."
