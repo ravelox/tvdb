@@ -109,10 +109,10 @@ printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title descript
   done
 done
 
-# --- create additional episodes to reach three per season ---
+# --- create additional episodes to reach five per season ---
 printf '%s\n' "$SEASONS" | while IFS='|' read -r season year; do
   [ -z "$season" ] && continue
-  for ep in 2 3; do
+  for ep in 2 3 4 5; do
     title="S${season}E${ep}"
     air_date=$(printf "%s-01-%02d" "$year" $((ep*7-6)))
     description="Episode ${ep} of season ${season}."

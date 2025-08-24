@@ -229,11 +229,11 @@ printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title descript
   fi
 done
 
-# --- create placeholder episodes to reach three per season ---
+# --- create placeholder episodes to reach five per season ---
 echo "Ensuring additional episodes..."
 for season in $(seq 1 26); do
   y="$(lookup_year "$season" || true)"
-  for ep in 2 3; do
+  for ep in 2 3 4 5; do
     title="S${season}E${ep}"
     air_date=$(printf "%s-01-%02d" "$y" $((ep*7-6)))
     description="Episode ${ep} of season ${season}."
