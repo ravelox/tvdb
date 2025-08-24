@@ -60,6 +60,45 @@ $SEASON_YEAR
 EOF
 }
 
+# --- season -> episode count (IMDb) ---
+# Counts cross-referenced with https://www.imdb.com/title/tt0056751/ for
+# the classic 1963 series. Used to create placeholder episodes matching
+# the real number per season.
+read -r -d '' SEASON_EPISODE_COUNT <<'EOF' || true
+1|42
+2|39
+3|45
+4|43
+5|40
+6|44
+7|25
+8|25
+9|26
+10|26
+11|26
+12|20
+13|26
+14|26
+15|26
+16|26
+17|26
+18|28
+19|26
+20|28
+21|24
+22|13
+23|14
+24|14
+25|14
+26|14
+EOF
+
+lookup_epcount() {
+  awk -F'|' -v s="$1" '$1==s {print $2; found=1; exit} END{ if(!found) exit 1 }' <<EOF
+$SEASON_EPISODE_COUNT
+EOF
+}
+
 # --- create seasons 1..26 if missing ---
 existing_seasons_json=$(curl -s "$API/shows/$SHOW_ID/seasons")
 for s in $(seq 1 26); do
@@ -231,14 +270,20 @@ printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title descript
   fi
 done
 
-# --- create placeholder episodes to reach five per season ---
+# --- create placeholder episodes to match IMDb counts ---
 echo "Ensuring additional episodes..."
 for season in $(seq 1 26); do
+  total="$(lookup_epcount "$season" || true)"
+  [ -z "$total" ] && continue
   y="$(lookup_year "$season" || true)"
   existing_count=$(curl -s "$API/shows/$SHOW_ID/seasons/$season/episodes" | jq 'length')
-  for ep in $(seq $((existing_count+1)) 5); do
+  if [ "$existing_count" -ge "$total" ]; then
+    echo "Season $season already has $existing_count episodes"
+    continue
+  fi
+  for ep in $(seq $((existing_count+1)) "$total"); do
     title="S${season}E${ep}"
-    air_date=$(printf "%s-01-%02d" "$y" $((ep*7-6)))
+    air_date=$(date -d "${y:-1900}-01-01 +$((ep-1)) weeks" +%Y-%m-%d 2>/dev/null || printf "%s-01-01" "${y:-1900}")
     description="Episode ${ep} of season ${season}."
     if curl -s "$API/shows/$SHOW_ID/episodes" | jq -e --arg t "$title" --argjson s "$season" 'map(select(.season_number == $s and .title == $t)) | length > 0' >/dev/null; then
       echo "  Episode exists (S${season}E${ep}): $title"
