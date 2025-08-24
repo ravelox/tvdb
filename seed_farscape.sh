@@ -79,9 +79,13 @@ done
 # --- known episodes ---
 read -r -d '' EPISODES <<'EOF2' || true
 1|1999-03-19|Premiere|Series premiere.
+1|1999-03-26|I, E.T.|Crichton aids a stranded alien.
 2|2000-03-17|Mind the Baby|Season 2 opener.
+2|2000-03-24|Vitas Mortis|D'Argo encounters a Luxan ex-priestess.
 3|2001-03-16|Season of Death|Season 3 opener.
+3|2001-03-23|Suns and Lovers|A commerce station is struck by a storm.
 4|2002-06-07|Crichton Kicks|Season 4 opener.
+4|2002-06-14|What Was Lost (Part 1): Sacrifice|The crew reassembles on Arnessk.
 EOF2
 
 existing_eps=$(curl -s "$API/shows/$SHOW_ID/episodes")
@@ -112,7 +116,7 @@ done
 # --- create additional episodes to reach five per season ---
 printf '%s\n' "$SEASONS" | while IFS='|' read -r season year; do
   [ -z "$season" ] && continue
-  for ep in 2 3 4 5; do
+  for ep in 3 4 5; do
     title="S${season}E${ep}"
     air_date=$(printf "%s-01-%02d" "$year" $((ep*7-6)))
     description="Episode ${ep} of season ${season}."
