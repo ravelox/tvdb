@@ -79,9 +79,25 @@ done
 # --- known episodes ---
 read -r -d '' EPISODES <<'EOF2' || true
 1|1999-03-19|Premiere|Series premiere.
+1|1999-03-26|I, E.T.|Crichton helps a stranded alien.
+1|1999-04-09|Exodus from Genesis|Moya is infested with heat-seeking bugs.
+1|1999-04-23|Throne for a Loss|A crime lord kidnaps Rygel.
+1|1999-04-30|Back and Back and Back to the Future|Time-twisting visitors cause trouble.
 2|2000-03-17|Mind the Baby|Season 2 opener.
+2|2000-03-24|Vitas Mortis|D'Argo aids a dying Luxan.
+2|2000-03-31|Taking the Stone|Chiana joins thrill-seekers on a perilous planet.
+2|2000-04-07|Crackers Don't Matter|A scientist's device drives the crew mad.
+2|2000-04-14|The Way We Weren't|Aeryn's past comes to light.
 3|2001-03-16|Season of Death|Season 3 opener.
+3|2001-03-23|Suns and Lovers|The crew is trapped in a dangerous storm.
+3|2001-04-06|Self-Inflicted Wounds: Could'a, Would'a, Should'a|A wormhole merges ships.
+3|2001-04-13|Self-Inflicted Wounds: Wait for the Wheel|Crichton must make a painful choice.
+3|2001-04-20|Different Destinations|A time glitch alters history.
 4|2002-06-07|Crichton Kicks|Season 4 opener.
+4|2002-06-14|What Was Lost: A Gift from a Bad God|The crew returns to a desolate world.
+4|2002-06-21|What Was Lost: Resurrection|The crew fights Scorpius.
+4|2002-06-28|Lava's a Many Splendored Thing|The crew seeks riches in a lava planet.
+4|2002-07-05|Promises|Aeryn returns with a secret.
 EOF2
 
 existing_eps=$(curl -s "$API/shows/$SHOW_ID/episodes")
@@ -109,34 +125,5 @@ printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title descript
   done
 done
 
-# --- create additional episodes to reach five per season ---
-printf '%s\n' "$SEASONS" | while IFS='|' read -r season year; do
-  [ -z "$season" ] && continue
-  for ep in 2 3 4 5; do
-    title="S${season}E${ep}"
-    air_date=$(printf "%s-01-%02d" "$year" $((ep*7-6)))
-    description="Episode ${ep} of season ${season}."
-    if curl -s "$API/shows/$SHOW_ID/episodes" | jq -e --arg t "$title" --argjson s "$season" 'map(select(.season_number==$s and .title==$t))|length>0' >/dev/null; then
-      echo "Episode exists (S${season}E${ep}): $title"
-    else
-      echo "Creating episode (S${season}E${ep}): $title"
-      jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description" '{season_number:$season, air_date:$date, title:$t, description:$d}' | curl -s -X POST "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
-    fi
-    EP_ID=$(curl -s "$API/shows/$SHOW_ID/episodes" | jq -r --arg t "$title" --argjson s "$season" 'map(select(.season_number==$s and .title==$t)) | (.[0].id // empty)')
-    [ -z "$EP_ID" ] && { echo "Could not resolve episode id for season $season"; continue; }
-
-    case "$season" in
-      1) CHARS="John Crichton|Aeryn Sun|Ka D'Argo" ;;
-      2|3) CHARS="John Crichton|Aeryn Sun|Ka D'Argo|Chiana" ;;
-      4) CHARS="John Crichton|Chiana" ;;
-      *) CHARS="" ;;
-    esac
-    echo "$CHARS" | tr '|' '\n' | while IFS= read -r char; do
-      [ -z "$char" ] && continue
-      echo "  Linking $char"
-      curl -s -X POST "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$char" '{character_name:$n}')" >/dev/null
-    done
-  done
-done
 
 echo "Farscape seeding complete"

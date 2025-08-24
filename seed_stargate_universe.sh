@@ -78,8 +78,14 @@ done
 read -r -d '' EPISODES <<'EOF2' || true
 1|2009-10-02|Air (Part 1)|Series premiere.
 1|2009-10-09|Air (Part 2)|Continuation of the premiere.
+1|2009-10-16|Air (Part 3)|The stranded crew searches for water.
+1|2009-10-23|Darkness|Power failures threaten the ship.
+1|2009-10-30|Light|The crew faces death as the ship heads for a star.
 2|2010-09-28|Intervention|Season 2 opener.
-2|2010-10-05|Aftermath|Season 2 continues.
+2|2010-10-05|Aftermath|Young faces the consequences of command.
+2|2010-10-12|Awakening|An encounter with an Ancient seed ship.
+2|2010-10-19|Pathogen|Chloe undergoes strange changes.
+2|2010-10-26|Cloverdale|Scott lives an alternate reality.
 EOF2
 
 existing_eps=$(curl -s "$API/shows/$SHOW_ID/episodes")
@@ -99,26 +105,5 @@ printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title descript
   done
 done
 
-# --- create additional episodes to reach five per season ---
-printf '%s\n' "$SEASONS" | while IFS='|' read -r season year; do
-  [ -z "$season" ] && continue
-  for ep in 2 3 4 5; do
-    title="S${season}E${ep}"
-    air_date=$(printf "%s-01-%02d" "$year" $((ep*7-6)))
-    description="Episode ${ep} of season ${season}."
-    if curl -s "$API/shows/$SHOW_ID/episodes" | jq -e --arg t "$title" --argjson s "$season" 'map(select(.season_number==$s and .title==$t))|length>0' >/dev/null; then
-      echo "Episode exists (S${season}E${ep}): $title"
-    else
-      echo "Creating episode (S${season}E${ep}): $title"
-      jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description" '{season_number:$season, air_date:$date, title:$t, description:$d}' | curl -s -X POST "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
-    fi
-    EP_ID=$(curl -s "$API/shows/$SHOW_ID/episodes" | jq -r --arg t "$title" --argjson s "$season" 'map(select(.season_number==$s and .title==$t)) | (.[0].id // empty)')
-    [ -z "$EP_ID" ] && { echo "Could not resolve episode id for season $season"; continue; }
-    for char in "Dr. Nicholas Rush" "Col. Everett Young" "Eli Wallace" "Chloe Armstrong"; do
-      echo "  Linking $char"
-      curl -s -X POST "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$char" '{character_name:$n}')" >/dev/null
-    done
-  done
-done
 
 echo "Stargate Universe seeding complete"

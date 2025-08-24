@@ -82,12 +82,34 @@ done
 read -r -d '' EPISODES <<'EOF2' || true
 1|2015-12-14|Dulcinea|Series premiere.
 1|2015-12-22|The Big Empty|Holden's crew fights for survival.
+1|2015-12-29|Remember the Cant|The Canterbury's destruction spreads chaos.
+1|2016-01-05|CQB|The Rocinante is caught in a deadly battle.
+1|2016-01-12|Back to the Butcher|Holden deals with sudden fame.
 2|2017-02-01|Safe|Season 2 opener.
-2|2017-02-08|Doors & Corners|Season 2 continues.
+2|2017-02-01|Doors & Corners|Season 2 continues.
+2|2017-02-08|Static|Holden struggles with Miller's actions.
+2|2017-02-15|Godspeed|The Rocinante chases a dangerous threat.
+2|2017-02-22|Home|A massive object heads for Earth.
 3|2018-04-11|Fight or Flight|Season 3 opener.
+3|2018-04-18|IFF|The Rocinante aids a UN ship.
+3|2018-04-25|Assured Destruction|Earth considers a doomsday plan.
+3|2018-05-02|Reload|The crew resupplies and faces new threats.
+3|2018-05-09|Triple Point|Tensions at the Ring escalate.
 4|2019-12-13|New Terra|Season 4 opener.
+4|2019-12-13|Jetsam|Tensions on Ilus rise.
+4|2019-12-13|Subduction|Holden confronts the planet's mysteries.
+4|2019-12-13|Retrograde|A rescue mission turns dangerous.
+4|2019-12-13|Oppressor|Murtry makes a ruthless move.
 5|2020-12-16|Exodus|Season 5 opener.
+5|2020-12-16|Churn|Holden pursues a new threat.
+5|2020-12-16|Mother|Naomi reaches out to her son.
+5|2020-12-23|Gaugamela|Earth and Mars are under attack.
+5|2020-12-30|Down and Out|The crew deals with fallout.
 6|2021-12-10|Strange Dogs|Season 6 opener.
+6|2021-12-17|Azure Dragon|The Rocinante targets a rail-gun platform.
+6|2021-12-24|Force Projection|Holden takes a risky shot.
+6|2021-12-31|Redoubt|Drummer fights for allies.
+6|2022-01-07|Why We Fight|The inner planets unite for war.
 EOF2
 
 existing_eps=$(curl -s "$API/shows/$SHOW_ID/episodes")
@@ -113,32 +135,5 @@ printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title descript
   done
 done
 
-# --- create additional episodes to reach five per season ---
-printf '%s\n' "$SEASONS" | while IFS='|' read -r season year; do
-  [ -z "$season" ] && continue
-  for ep in 2 3 4 5; do
-    title="S${season}E${ep}"
-    air_date=$(printf "%s-01-%02d" "$year" $((ep*7-6)))
-    description="Episode ${ep} of season ${season}."
-    if curl -s "$API/shows/$SHOW_ID/episodes" | jq -e --arg t "$title" --argjson s "$season" 'map(select(.season_number==$s and .title==$t))|length>0' >/dev/null; then
-      echo "Episode exists (S${season}E${ep}): $title"
-    else
-      echo "Creating episode (S${season}E${ep}): $title"
-      jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description" '{season_number:$season, air_date:$date, title:$t, description:$d}' | curl -s -X POST "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
-    fi
-    EP_ID=$(curl -s "$API/shows/$SHOW_ID/episodes" | jq -r --arg t "$title" --argjson s "$season" 'map(select(.season_number==$s and .title==$t)) | (.[0].id // empty)')
-    [ -z "$EP_ID" ] && { echo "Could not resolve episode id for season $season"; continue; }
-
-    case "$season" in
-      6) CHARS="James Holden|Naomi Nagata|Amos Burton" ;;
-      *) CHARS="James Holden|Naomi Nagata|Alex Kamal|Amos Burton" ;;
-    esac
-    echo "$CHARS" | tr '|' '\n' | while IFS= read -r char; do
-      [ -z "$char" ] && continue
-      echo "  Linking $char"
-      curl -s -X POST "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$char" '{character_name:$n}')" >/dev/null
-    done
-  done
-done
 
 echo "The Expanse seeding complete"
