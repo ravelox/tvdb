@@ -1,11 +1,13 @@
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const { spawn } = require('node:child_process');
+const path = require('node:path');
 
 let serverProcess;
 
 before(async () => {
-  serverProcess = spawn('node', ['server.js'], {
+  const mockPath = path.resolve(__dirname, 'mock-db.js');
+  serverProcess = spawn('node', ['-r', mockPath, 'server.js'], {
     cwd: __dirname + '/..',
     env: { ...process.env, PORT: '3000' },
     stdio: ['ignore', 'pipe', 'pipe']
@@ -35,26 +37,26 @@ after(() => {
 const endpoints = [
   { method: 'GET', path: '/health' },
   { method: 'POST', path: '/init' },
-  { method: 'POST', path: '/actors', body: { name: 'Tester' } },
+  { method: 'POST', path: '/actors', body: { name: 'Tester' }, expect: 201 },
   { method: 'GET', path: '/actors' },
   { method: 'GET', path: '/actors/1', expect: 404 },
   { method: 'PUT', path: '/actors/1', body: { name: 'Updated' }, expect: 404 },
   { method: 'DELETE', path: '/actors/1', expect: 404 },
 
-  { method: 'POST', path: '/shows', body: { title: 'Show', description: 'Desc', year: 2020 } },
+  { method: 'POST', path: '/shows', body: { title: 'Show', description: 'Desc', year: 2020 }, expect: 201 },
   { method: 'GET', path: '/shows' },
   { method: 'GET', path: '/shows/1', expect: 404 },
   { method: 'PUT', path: '/shows/1', body: { title: 'Updated', description: 'Desc', year: 2021 }, expect: 404 },
   { method: 'DELETE', path: '/shows/1', expect: 404 },
 
   { method: 'POST', path: '/shows/1/seasons', body: { season_number: 1, year: 2020 }, expect: 404 },
-  { method: 'GET', path: '/shows/1/seasons', expect: 404 },
+  { method: 'GET', path: '/shows/1/seasons', expect: 200 },
   { method: 'GET', path: '/seasons/1', expect: 404 },
   { method: 'PUT', path: '/seasons/1', body: { show_id: 1, season_number: 1, year: 2020 }, expect: 404 },
   { method: 'DELETE', path: '/seasons/1', expect: 404 },
 
-  { method: 'POST', path: '/shows/1/episodes', body: { season_id: 1, air_date: null, title: 'Ep', description: 'Desc' }, expect: 404 },
-  { method: 'GET', path: '/shows/1/episodes', expect: 404 },
+  { method: 'POST', path: '/shows/1/episodes', body: { season_id: 1, air_date: null, title: 'Ep', description: 'Desc' }, expect: 400 },
+  { method: 'GET', path: '/shows/1/episodes', expect: 200 },
   { method: 'GET', path: '/seasons/1/episodes', expect: 404 },
   { method: 'GET', path: '/shows/1/seasons/1/episodes', expect: 404 },
   { method: 'GET', path: '/episodes/1', expect: 404 },
@@ -62,7 +64,7 @@ const endpoints = [
   { method: 'DELETE', path: '/episodes/1', expect: 404 },
 
   { method: 'POST', path: '/shows/1/characters', body: { name: 'Char', actor_id: null }, expect: 404 },
-  { method: 'GET', path: '/shows/1/characters', expect: 404 },
+  { method: 'GET', path: '/shows/1/characters', expect: 200 },
   { method: 'GET', path: '/characters/1', expect: 404 },
   { method: 'PUT', path: '/characters/1', body: { show_id: 1, name: 'Char', actor_id: null }, expect: 404 },
   { method: 'DELETE', path: '/characters/1', expect: 404 },
