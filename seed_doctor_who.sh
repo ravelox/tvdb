@@ -235,7 +235,8 @@ done
 echo "Ensuring additional episodes..."
 for season in $(seq 1 26); do
   y="$(lookup_year "$season" || true)"
-  for ep in 2 3 4 5; do
+  existing_count=$(curl -s "$API/shows/$SHOW_ID/seasons/$season/episodes" | jq 'length')
+  for ep in $(seq $((existing_count+1)) 5); do
     title="S${season}E${ep}"
     air_date=$(printf "%s-01-%02d" "$y" $((ep*7-6)))
     description="Episode ${ep} of season ${season}."
@@ -243,7 +244,7 @@ for season in $(seq 1 26); do
       echo "  Episode exists (S${season}E${ep}): $title"
     else
       echo "  Creating episode (S${season}E${ep}): $title"
-      jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description" '{season_number:$season, air_date:$date, title:$t, description:$d}' | curl -s -X POST "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
+      jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description" '{season_number:$season,air_date:$date, title:$t, description:$d}' | curl -s -X POST "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
     fi
 
     EP_ID=$(curl -s "$API/shows/$SHOW_ID/episodes" | jq -r --arg t "$title" --argjson s "$season" 'map(select(.season_number == $s and .title == $t)) | (.[0].id // empty)')
