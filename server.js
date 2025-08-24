@@ -65,6 +65,29 @@ app.use(morgan('dev'));
 function httpError(res, code, message) { return res.status(code).json({ error: message }); }
 const asyncH = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{2}:?\d{2})$/;
+function parseDateRange(req, res) {
+  const { start, end } = req.query;
+  const earliest = new Date('1000-01-01T00:00:00+00:00');
+  const latest = new Date('9999-12-31T23:59:59+00:00');
+  let startDate = earliest;
+  let endDate = latest;
+  if (start) {
+    if (!DATE_RE.test(start) || isNaN(Date.parse(start))) return httpError(res, 400, 'invalid start date');
+    startDate = new Date(start);
+  }
+  if (end) {
+    if (!DATE_RE.test(end) || isNaN(Date.parse(end))) return httpError(res, 400, 'invalid end date');
+    endDate = new Date(end);
+  }
+  return {
+    start: startDate,
+    end: endDate,
+    startSql: startDate.toISOString().slice(0, 19).replace('T', ' '),
+    endSql: endDate.toISOString().slice(0, 19).replace('T', ' '),
+  };
+}
+
 // --------------------------- OpenAPI discovery ---------------------------
 const openapiBase = {
   openapi: '3.0.3',
@@ -137,6 +160,18 @@ const openapiBase = {
   }
 };
 
+const dateRangeParams = [
+  { name:'start', in:'query', required:false, schema:{ type:'string', format:'date-time' }, description:'Filter results with created_at >= start' },
+  { name:'end', in:'query', required:false, schema:{ type:'string', format:'date-time' }, description:'Filter results with created_at <= end (default limitless)' }
+];
+for (const ops of Object.values(openapiBase.paths)) {
+  for (const [method, op] of Object.entries(ops)) {
+    if (method === 'get') {
+      op.parameters = [...(op.parameters || []), ...dateRangeParams];
+    }
+  }
+}
+
 app.get(['/openapi.json', '/spec', '/.well-known/openapi.json'], (req, res) => {
   const base = `${req.protocol}://${req.get('host')}`;
   const doc = { ...openapiBase, servers: [{ url: base }] };
@@ -155,7 +190,8 @@ try {
 }
 
 // --------------------------- Health ---------------------------
-app.get('/health', asyncH(async (_req, res) => {
+app.get('/health', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   try {
     const [rows] = await pool.query('SELECT 1 AS ok');
     res.json({ ok: true, db: rows[0].ok === 1 });
@@ -185,13 +221,15 @@ app.post('/actors', asyncH(async (req, res) => {
   res.status(201).json(rows[0]);
 }));
 
-app.get('/actors', asyncH(async (_req, res) => {
-  const [rows] = await pool.execute('SELECT * FROM actors ORDER BY name');
+app.get('/actors', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
+  const [rows] = await pool.execute('SELECT * FROM actors WHERE created_at BETWEEN ? AND ? ORDER BY name', [range.startSql, range.endSql]);
   res.json(rows);
 }));
 
 app.get('/actors/:id', asyncH(async (req, res) => {
-  const [rows] = await pool.execute('SELECT * FROM actors WHERE id = ?', [req.params.id]);
+  const range = parseDateRange(req, res); if (!range) return;
+  const [rows] = await pool.execute('SELECT * FROM actors WHERE id = ? AND created_at BETWEEN ? AND ?', [req.params.id, range.startSql, range.endSql]);
   if (!rows.length) return httpError(res, 404, 'actor not found');
   res.json(rows[0]);
 }));
@@ -223,13 +261,15 @@ app.post('/shows', asyncH(async (req, res) => {
   res.status(201).json(rows[0]);
 }));
 
-app.get('/shows', asyncH(async (_req, res) => {
-  const [rows] = await pool.execute('SELECT * FROM shows ORDER BY year IS NULL, year, title');
+app.get('/shows', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
+  const [rows] = await pool.execute('SELECT * FROM shows WHERE created_at BETWEEN ? AND ? ORDER BY year IS NULL, year, title', [range.startSql, range.endSql]);
   res.json(rows);
 }));
 
 app.get('/shows/:id', asyncH(async (req, res) => {
-  const [rows] = await pool.execute('SELECT * FROM shows WHERE id = ?', [req.params.id]);
+  const range = parseDateRange(req, res); if (!range) return;
+  const [rows] = await pool.execute('SELECT * FROM shows WHERE id = ? AND created_at BETWEEN ? AND ?', [req.params.id, range.startSql, range.endSql]);
   if (!rows.length) return httpError(res, 404, 'show not found');
   res.json(rows[0]);
 }));
@@ -267,15 +307,17 @@ app.post('/shows/:showId/seasons', asyncH(async (req, res) => {
 }));
 
 app.get('/shows/:showId/seasons', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   const [rows] = await pool.execute(
-    'SELECT * FROM seasons WHERE show_id=? ORDER BY season_number',
-    [req.params.showId]
+    'SELECT * FROM seasons WHERE show_id=? AND created_at BETWEEN ? AND ? ORDER BY season_number',
+    [req.params.showId, range.startSql, range.endSql]
   );
   res.json(rows);
 }));
 
 app.get('/seasons/:id', asyncH(async (req, res) => {
-  const [rows] = await pool.execute('SELECT * FROM seasons WHERE id=?', [req.params.id]);
+  const range = parseDateRange(req, res); if (!range) return;
+  const [rows] = await pool.execute('SELECT * FROM seasons WHERE id=? AND created_at BETWEEN ? AND ?', [req.params.id, range.startSql, range.endSql]);
   if (!rows.length) return httpError(res, 404, 'season not found');
   res.json(rows[0]);
 }));
@@ -327,53 +369,57 @@ app.post('/shows/:showId/episodes', asyncH(async (req, res) => {
 }));
 
 app.get('/shows/:showId/episodes', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   const [rows] = await pool.execute(
     `SELECT e.id, e.title, e.description, e.air_date, s.season_number, s.id as season_id, s.show_id
      FROM episodes e
      JOIN seasons s ON s.id = e.season_id
-     WHERE s.show_id = ?
+     WHERE s.show_id = ? AND e.created_at BETWEEN ? AND ?
      ORDER BY s.season_number, e.air_date IS NULL, e.air_date, e.id`,
-    [req.params.showId]
+    [req.params.showId, range.startSql, range.endSql]
   );
   res.json(rows);
 }));
 
 // list episodes in a specific season by season id
 app.get('/seasons/:id/episodes', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   const [season] = await pool.execute('SELECT id FROM seasons WHERE id=?', [req.params.id]);
   if (!season.length) return httpError(res, 404, 'season not found');
   const [rows] = await pool.execute(
     `SELECT e.id, e.title, e.description, e.air_date, e.season_id, s.season_number, s.show_id
      FROM episodes e
      JOIN seasons s ON s.id = e.season_id
-     WHERE e.season_id = ?
+     WHERE e.season_id = ? AND e.created_at BETWEEN ? AND ?
      ORDER BY e.air_date IS NULL, e.air_date, e.id`,
-    [req.params.id]
+    [req.params.id, range.startSql, range.endSql]
   );
   res.json(rows);
 }));
 
 // list episodes via show id + season_number
 app.get('/shows/:showId/seasons/:seasonNumber/episodes', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   const seasonId = await getSeasonIdByShowAndNumber(req.params.showId, req.params.seasonNumber);
   if (!seasonId) return httpError(res, 404, 'season not found for this show');
   const [rows] = await pool.execute(
     `SELECT e.id, e.title, e.description, e.air_date, e.season_id, s.season_number, s.show_id
      FROM episodes e
      JOIN seasons s ON s.id = e.season_id
-     WHERE e.season_id = ?
+     WHERE e.season_id = ? AND e.created_at BETWEEN ? AND ?
      ORDER BY e.air_date IS NULL, e.air_date, e.id`,
-    [seasonId]
+    [seasonId, range.startSql, range.endSql]
   );
   res.json(rows);
 }));
 
 app.get('/episodes/:id', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   const [rows] = await pool.execute(
     `SELECT e.*, s.season_number, s.show_id
      FROM episodes e JOIN seasons s ON s.id=e.season_id
-     WHERE e.id=?`,
-    [req.params.id]
+     WHERE e.id=? AND e.created_at BETWEEN ? AND ?`,
+    [req.params.id, range.startSql, range.endSql]
   );
   if (!rows.length) return httpError(res, 404, 'episode not found');
   const ep = rows[0];
@@ -382,9 +428,9 @@ app.get('/episodes/:id', asyncH(async (req, res) => {
      FROM episode_characters ec
      JOIN characters c ON c.id = ec.character_id
      LEFT JOIN actors a ON a.id = c.actor_id
-     WHERE ec.episode_id = ?
+     WHERE ec.episode_id = ? AND ec.created_at BETWEEN ? AND ?
      ORDER BY c.name`,
-    [req.params.id]
+    [req.params.id, range.startSql, range.endSql]
   );
   ep.characters = chars;
   res.json(ep);
@@ -456,20 +502,22 @@ app.post('/shows/:showId/characters', asyncH(async (req, res) => {
 }));
 
 app.get('/shows/:showId/characters', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   const [rows] = await pool.execute(
     `SELECT c.*, a.name as actor_name
      FROM characters c LEFT JOIN actors a ON a.id=c.actor_id
-     WHERE c.show_id=?
+     WHERE c.show_id=? AND c.created_at BETWEEN ? AND ?
      ORDER BY c.name`,
-    [req.params.showId]
+    [req.params.showId, range.startSql, range.endSql]
   );
   res.json(rows);
 }));
 
 app.get('/characters/:id', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   const [rows] = await pool.execute(
-    `SELECT c.*, a.name as actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id WHERE c.id=?`,
-    [req.params.id]
+    `SELECT c.*, a.name as actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id WHERE c.id=? AND c.created_at BETWEEN ? AND ?`,
+    [req.params.id, range.startSql, range.endSql]
   );
   if (!rows.length) return httpError(res, 404, 'character not found');
   res.json(rows[0]);
@@ -583,6 +631,7 @@ app.post('/episodes/:episodeId/characters', asyncH(async (req, res) => {
 
 // List characters for an episode
 app.get('/episodes/:episodeId/characters', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   const ep = await getEpisodeWithShow(req.params.episodeId);
   if (!ep) return httpError(res, 404, 'episode not found');
   const [rows] = await pool.execute(
@@ -590,9 +639,9 @@ app.get('/episodes/:episodeId/characters', asyncH(async (req, res) => {
      FROM episode_characters ec
      JOIN characters c ON c.id = ec.character_id
      LEFT JOIN actors a ON a.id = c.actor_id
-     WHERE ec.episode_id = ?
+     WHERE ec.episode_id = ? AND ec.created_at BETWEEN ? AND ?
      ORDER BY c.name`,
-    [ep.episode_id]
+    [ep.episode_id, range.startSql, range.endSql]
   );
   res.json(rows);
 }));
@@ -769,14 +818,20 @@ app.post('/actors/query-jobs', asyncH(async (req, res) => {
 }));
 
 app.get('/jobs/:id', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   const job = jobs.get(req.params.id);
   if (!job) return httpError(res, 404, 'job not found');
+  const created = new Date(job.created_at);
+  if (created < range.start || created > range.end) return httpError(res, 404, 'job not found');
   res.json({ id: job.id, status: job.status, created_at: job.created_at, updated_at: job.updated_at, eta_ms: job.eta_ms, rows: job.rowsCount, error: job.error, download_url: job.status === 'completed' ? `/jobs/${job.id}/download` : null });
 }));
 
 app.get('/jobs/:id/download', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
   const job = jobs.get(req.params.id);
   if (!job) return httpError(res, 404, 'job not found');
+  const created = new Date(job.created_at);
+  if (created < range.start || created > range.end) return httpError(res, 404, 'job not found');
   if (job.status !== 'completed') return httpError(res, 409, `job not ready (status=${job.status})`);
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Content-Disposition', `attachment; filename="${job.filename}"`);
