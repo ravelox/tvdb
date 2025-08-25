@@ -19,7 +19,7 @@ services:
     ports:
       - "6888:80"
   tvdb:
-    image: ravelox/tvdb:1.0.0
+    image: ravelox/tvdb:1.0.1
     restart: always
     depends_on:
       - db
