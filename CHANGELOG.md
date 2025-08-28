@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.6] - 2025-08-28
+### Added
+- Support for nested sub-resource retrieval via `include` parameter.
+- Tests covering `include` query usage.
+- OpenAPI spec and Postman collection updated.
+- README curl examples for `start`, `end`, and `include` query parameters.
+### Changed
+- Bumped package and spec versions to 1.0.6.
+
 ## [1.0.5] - 2025-08-12
 ### Added
 - Query jobs duplicated for seasons, episodes, characters, and actors.

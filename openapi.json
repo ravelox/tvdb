@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "TV Shows API",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs."
   },
   "servers": [
@@ -160,7 +160,38 @@
           "200": {
             "description": "OK"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       }
     },
     "/init": {
@@ -181,7 +212,38 @@
         "tags": [
           "actors"
         ],
-        "summary": "List actors"
+        "summary": "List actors",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -195,7 +257,38 @@
         "tags": [
           "actors"
         ],
-        "summary": "Get actor"
+        "summary": "Get actor",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -225,7 +318,38 @@
         "tags": [
           "shows"
         ],
-        "summary": "List shows"
+        "summary": "List shows",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -239,7 +363,38 @@
         "tags": [
           "shows"
         ],
-        "summary": "Get show"
+        "summary": "Get show",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -269,7 +424,38 @@
         "tags": [
           "seasons"
         ],
-        "summary": "List seasons for show"
+        "summary": "List seasons for show",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -293,7 +479,38 @@
         "tags": [
           "seasons"
         ],
-        "summary": "Get season"
+        "summary": "Get season",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -323,7 +540,38 @@
         "tags": [
           "episodes"
         ],
-        "summary": "List episodes for show"
+        "summary": "List episodes for show",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -347,7 +595,38 @@
         "tags": [
           "episodes"
         ],
-        "summary": "Get episode (includes characters array)"
+        "summary": "Get episode (includes characters array)",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -377,7 +656,38 @@
         "tags": [
           "characters"
         ],
-        "summary": "List characters for show"
+        "summary": "List characters for show",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -401,7 +711,38 @@
         "tags": [
           "characters"
         ],
-        "summary": "Get character"
+        "summary": "Get character",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -431,7 +772,38 @@
         "tags": [
           "links"
         ],
-        "summary": "List characters in episode"
+        "summary": "List characters in episode",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -521,7 +893,38 @@
         "tags": [
           "jobs"
         ],
-        "summary": "Poll job status"
+        "summary": "Poll job status",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -545,7 +948,38 @@
         "tags": [
           "jobs"
         ],
-        "summary": "Download job results (JSON)"
+        "summary": "Download job results (JSON)",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          }
+        ]
       },
       "parameters": [
         {
@@ -572,6 +1006,35 @@
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
           }
         ]
       }
@@ -598,6 +1061,35 @@
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
           }
         ]
       }

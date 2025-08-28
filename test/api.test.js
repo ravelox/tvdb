@@ -69,6 +69,13 @@ const endpoints = [
   { method: 'PUT', path: '/characters/1', body: { show_id: 1, name: 'Char', actor_id: null }, expect: 404 },
   { method: 'DELETE', path: '/characters/1', expect: 404 },
 
+  // New include-based nested retrievals
+  { method: 'GET', path: '/shows?include=seasons' },
+  { method: 'GET', path: '/shows/1/episodes?include=characters.actor', expect: 200 },
+  { method: 'GET', path: '/shows/1/characters?include=actor', expect: 200 },
+  { method: 'GET', path: '/episodes/1?include=characters.actor', expect: 404 },
+  { method: 'GET', path: '/episodes/1/characters?include=actor', expect: 404 },
+
   { method: 'POST', path: '/episodes/1/characters', body: { character_id: 1 }, expect: 404 },
   { method: 'GET', path: '/episodes/1/characters', expect: 404 },
   { method: 'DELETE', path: '/episodes/1/characters/1', expect: 404 },
