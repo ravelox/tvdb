@@ -88,6 +88,21 @@ function parseDateRange(req, res) {
   };
 }
 
+function parseIncludeParam(val) {
+  const result = {};
+  if (!val) return result;
+  const items = Array.isArray(val) ? val : String(val).split(',');
+  for (const item of items) {
+    const segs = item.split('.').map(s => s.trim()).filter(Boolean);
+    let cur = result;
+    for (const seg of segs) {
+      cur[seg] = cur[seg] || {};
+      cur = cur[seg];
+    }
+  }
+  return result;
+}
+
 // --------------------------- OpenAPI discovery ---------------------------
 const openapiBase = {
   openapi: '3.0.3',
@@ -164,10 +179,11 @@ const dateRangeParams = [
   { name:'start', in:'query', required:false, schema:{ type:'string', format:'date-time' }, description:'Filter results with created_at >= start' },
   { name:'end', in:'query', required:false, schema:{ type:'string', format:'date-time' }, description:'Filter results with created_at <= end (default limitless)' }
 ];
+const includeParam = { name:'include', in:'query', required:false, schema:{ type:'string' }, description:'Comma separated list of sub-resources to include, e.g. episodes,episodes.characters' };
 for (const ops of Object.values(openapiBase.paths)) {
   for (const [method, op] of Object.entries(ops)) {
     if (method === 'get') {
-      op.parameters = [...(op.parameters || []), ...dateRangeParams];
+      op.parameters = [...(op.parameters || []), ...dateRangeParams, includeParam];
     }
   }
 }
@@ -263,13 +279,15 @@ app.post('/shows', asyncH(async (req, res) => {
 
 app.get('/shows', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await pool.execute('SELECT * FROM shows WHERE created_at BETWEEN ? AND ? ORDER BY year IS NULL, year, title', [range.startSql, range.endSql]);
+  const include = parseIncludeParam(req.query.include);
+  const rows = await runShowQuery({ startSql: range.startSql, endSql: range.endSql }, include);
   res.json(rows);
 }));
 
 app.get('/shows/:id', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await pool.execute('SELECT * FROM shows WHERE id = ? AND created_at BETWEEN ? AND ?', [req.params.id, range.startSql, range.endSql]);
+  const include = parseIncludeParam(req.query.include);
+  const rows = await runShowQuery({ id: req.params.id, startSql: range.startSql, endSql: range.endSql }, include);
   if (!rows.length) return httpError(res, 404, 'show not found');
   res.json(rows[0]);
 }));
@@ -370,14 +388,8 @@ app.post('/shows/:showId/episodes', asyncH(async (req, res) => {
 
 app.get('/shows/:showId/episodes', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await pool.execute(
-    `SELECT e.id, e.title, e.description, e.air_date, s.season_number, s.id as season_id, s.show_id
-     FROM episodes e
-     JOIN seasons s ON s.id = e.season_id
-     WHERE s.show_id = ? AND e.created_at BETWEEN ? AND ?
-     ORDER BY s.season_number, e.air_date IS NULL, e.air_date, e.id`,
-    [req.params.showId, range.startSql, range.endSql]
-  );
+  const include = parseIncludeParam(req.query.include);
+  const rows = await runEpisodeQuery({ show_id: req.params.showId, startSql: range.startSql, endSql: range.endSql }, include);
   res.json(rows);
 }));
 
@@ -386,14 +398,8 @@ app.get('/seasons/:id/episodes', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   const [season] = await pool.execute('SELECT id FROM seasons WHERE id=?', [req.params.id]);
   if (!season.length) return httpError(res, 404, 'season not found');
-  const [rows] = await pool.execute(
-    `SELECT e.id, e.title, e.description, e.air_date, e.season_id, s.season_number, s.show_id
-     FROM episodes e
-     JOIN seasons s ON s.id = e.season_id
-     WHERE e.season_id = ? AND e.created_at BETWEEN ? AND ?
-     ORDER BY e.air_date IS NULL, e.air_date, e.id`,
-    [req.params.id, range.startSql, range.endSql]
-  );
+  const include = parseIncludeParam(req.query.include);
+  const rows = await runEpisodeQuery({ season_id: req.params.id, startSql: range.startSql, endSql: range.endSql }, include);
   res.json(rows);
 }));
 
@@ -402,38 +408,17 @@ app.get('/shows/:showId/seasons/:seasonNumber/episodes', asyncH(async (req, res)
   const range = parseDateRange(req, res); if (!range) return;
   const seasonId = await getSeasonIdByShowAndNumber(req.params.showId, req.params.seasonNumber);
   if (!seasonId) return httpError(res, 404, 'season not found for this show');
-  const [rows] = await pool.execute(
-    `SELECT e.id, e.title, e.description, e.air_date, e.season_id, s.season_number, s.show_id
-     FROM episodes e
-     JOIN seasons s ON s.id = e.season_id
-     WHERE e.season_id = ? AND e.created_at BETWEEN ? AND ?
-     ORDER BY e.air_date IS NULL, e.air_date, e.id`,
-    [seasonId, range.startSql, range.endSql]
-  );
+  const include = parseIncludeParam(req.query.include);
+  const rows = await runEpisodeQuery({ season_id: seasonId, startSql: range.startSql, endSql: range.endSql }, include);
   res.json(rows);
 }));
 
 app.get('/episodes/:id', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await pool.execute(
-    `SELECT e.*, s.season_number, s.show_id
-     FROM episodes e JOIN seasons s ON s.id=e.season_id
-     WHERE e.id=? AND e.created_at BETWEEN ? AND ?`,
-    [req.params.id, range.startSql, range.endSql]
-  );
+  const include = parseIncludeParam(req.query.include);
+  const rows = await runEpisodeQuery({ id: req.params.id, startSql: range.startSql, endSql: range.endSql }, include);
   if (!rows.length) return httpError(res, 404, 'episode not found');
-  const ep = rows[0];
-  const [chars] = await pool.execute(
-    `SELECT c.id AS character_id, c.name AS character_name, a.name AS actor_name
-     FROM episode_characters ec
-     JOIN characters c ON c.id = ec.character_id
-     LEFT JOIN actors a ON a.id = c.actor_id
-     WHERE ec.episode_id = ? AND ec.created_at BETWEEN ? AND ?
-     ORDER BY c.name`,
-    [req.params.id, range.startSql, range.endSql]
-  );
-  ep.characters = chars;
-  res.json(ep);
+  res.json(rows[0]);
 }));
 
 app.put('/episodes/:id', asyncH(async (req, res) => {
@@ -503,22 +488,15 @@ app.post('/shows/:showId/characters', asyncH(async (req, res) => {
 
 app.get('/shows/:showId/characters', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await pool.execute(
-    `SELECT c.*, a.name as actor_name
-     FROM characters c LEFT JOIN actors a ON a.id=c.actor_id
-     WHERE c.show_id=? AND c.created_at BETWEEN ? AND ?
-     ORDER BY c.name`,
-    [req.params.showId, range.startSql, range.endSql]
-  );
+  const include = parseIncludeParam(req.query.include);
+  const rows = await runCharacterQuery({ show_id: req.params.showId, startSql: range.startSql, endSql: range.endSql }, include);
   res.json(rows);
 }));
 
 app.get('/characters/:id', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await pool.execute(
-    `SELECT c.*, a.name as actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id WHERE c.id=? AND c.created_at BETWEEN ? AND ?`,
-    [req.params.id, range.startSql, range.endSql]
-  );
+  const include = parseIncludeParam(req.query.include);
+  const rows = await runCharacterQuery({ id: req.params.id, startSql: range.startSql, endSql: range.endSql }, include);
   if (!rows.length) return httpError(res, 404, 'character not found');
   res.json(rows[0]);
 }));
@@ -634,8 +612,9 @@ app.get('/episodes/:episodeId/characters', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   const ep = await getEpisodeWithShow(req.params.episodeId);
   if (!ep) return httpError(res, 404, 'episode not found');
+  const include = parseIncludeParam(req.query.include);
   const [rows] = await pool.execute(
-    `SELECT c.id AS character_id, c.name AS character_name, a.name AS actor_name
+    `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name
      FROM episode_characters ec
      JOIN characters c ON c.id = ec.character_id
      LEFT JOIN actors a ON a.id = c.actor_id
@@ -643,7 +622,16 @@ app.get('/episodes/:episodeId/characters', asyncH(async (req, res) => {
      ORDER BY c.name`,
     [ep.episode_id, range.startSql, range.endSql]
   );
-  res.json(rows);
+  if (include.actor) {
+    const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))];
+    let actorsMap = {};
+    if (actorIds.length) {
+      const [actors] = await pool.query(`SELECT id, name FROM actors WHERE id IN (${actorIds.map(() => '?').join(',')})`, actorIds);
+      actorsMap = Object.fromEntries(actors.map(a => [a.id, a]));
+    }
+    return res.json(rows.map(r => ({ id: r.id, show_id: r.show_id, name: r.name, actor_id: r.actor_id, actor: r.actor_id ? actorsMap[r.actor_id] || { id: r.actor_id, name: r.actor_name } : null })));
+  }
+  res.json(rows.map(r => ({ id: r.id, show_id: r.show_id, name: r.name, actor_id: r.actor_id, actor_name: r.actor_name })));
 }));
 
 // Remove character from episode
@@ -663,14 +651,28 @@ app.delete('/episodes/:episodeId/characters/:characterId', asyncH(async (req, re
 // --------------------------- JOBS ---------------------------
 const jobs = new Map();
 function nowISO(){ return new Date().toISOString(); }
-async function runShowQuery(filters){
+async function runShowQuery(filters = {}, include = {}) {
   const where = [];
   const params = [];
+  if (filters.id != null) { where.push('id = ?'); params.push(filters.id); }
   if (filters.title) { where.push('title LIKE ?'); params.push(`%${filters.title}%`); }
   if (filters.year_min != null) { where.push('year >= ?'); params.push(filters.year_min); }
   if (filters.year_max != null) { where.push('year <= ?'); params.push(filters.year_max); }
+  if (filters.episode_title) {
+    where.push(`id IN (SELECT s.show_id FROM seasons s JOIN episodes e ON s.id=e.season_id WHERE e.title LIKE ?)`);
+    params.push(`%${filters.episode_title}%`);
+  }
+  if (filters.startSql && filters.endSql) {
+    where.push('created_at BETWEEN ? AND ?');
+    params.push(filters.startSql, filters.endSql);
+  }
   const sql = `SELECT id, title, description, year FROM shows ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY year IS NULL, year, title`;
   const [rows] = await pool.execute(sql, params);
+  if (include.episodes) {
+    for (const show of rows) {
+      show.episodes = await runEpisodeQuery({ show_id: show.id }, include.episodes);
+    }
+  }
   return rows;
 }
 
@@ -686,25 +688,74 @@ async function runSeasonQuery(filters){
   return rows;
 }
 
-async function runEpisodeQuery(filters){
+async function runEpisodeQuery(filters = {}, include = {}) {
   const where = [];
   const params = [];
+  if (filters.id != null) { where.push('e.id = ?'); params.push(filters.id); }
   if (filters.show_id != null) { where.push('s.show_id = ?'); params.push(filters.show_id); }
+  if (filters.season_id != null) { where.push('e.season_id = ?'); params.push(filters.season_id); }
   if (filters.season_number != null) { where.push('s.season_number = ?'); params.push(filters.season_number); }
   if (filters.title) { where.push('e.title LIKE ?'); params.push(`%${filters.title}%`); }
+  if (filters.character_name) {
+    where.push(`e.id IN (SELECT ec.episode_id FROM episode_characters ec JOIN characters c2 ON c2.id=ec.character_id WHERE c2.name LIKE ?)`);
+    params.push(`%${filters.character_name}%`);
+  }
+  if (filters.startSql && filters.endSql) {
+    where.push('e.created_at BETWEEN ? AND ?');
+    params.push(filters.startSql, filters.endSql);
+  }
   const sql = `SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id = e.season_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY e.air_date IS NULL, e.air_date, e.id`;
   const [rows] = await pool.execute(sql, params);
+  if (include.characters && rows.length) {
+    const episodeIds = rows.map(r => r.id);
+    const [chars] = await pool.query(
+      `SELECT ec.episode_id, c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name
+       FROM episode_characters ec
+       JOIN characters c ON c.id = ec.character_id
+       LEFT JOIN actors a ON a.id = c.actor_id
+       WHERE ec.episode_id IN (${episodeIds.map(() => '?').join(',')})
+       ORDER BY c.name`, episodeIds);
+    const grouped = {};
+    for (const c of chars) {
+      const arr = grouped[c.episode_id] || (grouped[c.episode_id] = []);
+      if (include.characters.actor && c.actor_id) {
+        arr.push({ id: c.id, show_id: c.show_id, name: c.name, actor_id: c.actor_id, actor: { id: c.actor_id, name: c.actor_name } });
+      } else {
+        arr.push({ id: c.id, show_id: c.show_id, name: c.name, actor_id: c.actor_id, actor_name: c.actor_name });
+      }
+    }
+    for (const ep of rows) {
+      ep.characters = grouped[ep.id] || [];
+    }
+  }
   return rows;
 }
 
-async function runCharacterQuery(filters){
+async function runCharacterQuery(filters = {}, include = {}) {
   const where = [];
   const params = [];
-  if (filters.show_id != null) { where.push('show_id = ?'); params.push(filters.show_id); }
-  if (filters.actor_id != null) { where.push('actor_id = ?'); params.push(filters.actor_id); }
-  if (filters.name) { where.push('name LIKE ?'); params.push(`%${filters.name}%`); }
-  const sql = `SELECT id, show_id, name, actor_id FROM characters ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY name`;
+  if (filters.id != null) { where.push('c.id = ?'); params.push(filters.id); }
+  if (filters.show_id != null) { where.push('c.show_id = ?'); params.push(filters.show_id); }
+  if (filters.actor_id != null) { where.push('c.actor_id = ?'); params.push(filters.actor_id); }
+  if (filters.name) { where.push('c.name LIKE ?'); params.push(`%${filters.name}%`); }
+  if (filters.actor_name) { where.push('a.name LIKE ?'); params.push(`%${filters.actor_name}%`); }
+  if (filters.startSql && filters.endSql) {
+    where.push('c.created_at BETWEEN ? AND ?');
+    params.push(filters.startSql, filters.endSql);
+  }
+  const sql = `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY c.name`;
   const [rows] = await pool.execute(sql, params);
+  if (include.actor && rows.length) {
+    const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))];
+    let actorsMap = {};
+    if (actorIds.length) {
+      const [actors] = await pool.query(`SELECT id, name FROM actors WHERE id IN (${actorIds.map(() => '?').join(',')})`, actorIds);
+      actorsMap = Object.fromEntries(actors.map(a => [a.id, a]));
+    }
+    for (const r of rows) {
+      r.actor = r.actor_id ? actorsMap[r.actor_id] || { id: r.actor_id, name: r.actor_name } : null;
+    }
+  }
   return rows;
 }
 
@@ -718,7 +769,8 @@ async function runActorQuery(filters){
 }
 
 app.post('/shows/query-jobs', asyncH(async (req, res) => {
-  const { title, year_min, year_max, delay_ms } = req.body || {};
+  const { title, year_min, year_max, episode_title, include, delay_ms } = req.body || {};
+  const includeTree = parseIncludeParam(include);
   const jobId = randomUUID();
   const delay = Number.isFinite(delay_ms) ? Math.max(500, Math.min(60000, Number(delay_ms))) : (2000 + Math.floor(Math.random()*6000));
   const job = { id: jobId, status: 'queued', created_at: nowISO(), updated_at: nowISO(), eta_ms: delay, result: null, rowsCount: null, error: null, filename: `shows_query_${jobId}.json` };
@@ -727,8 +779,8 @@ app.post('/shows/query-jobs', asyncH(async (req, res) => {
     const j = jobs.get(jobId); if (!j) return;
     j.status = 'running'; j.updated_at = nowISO();
     try {
-      const rows = await runShowQuery({ title, year_min, year_max });
-      const payload = Buffer.from(JSON.stringify({ filters: { title, year_min, year_max }, count: rows.length, rows }, null, 2));
+      const rows = await runShowQuery({ title, year_min, year_max, episode_title }, includeTree);
+      const payload = Buffer.from(JSON.stringify({ filters: { title, year_min, year_max, episode_title, include }, count: rows.length, rows }, null, 2));
       j.result = payload; j.rowsCount = rows.length; j.status = 'completed'; j.updated_at = nowISO();
     } catch (e) {
       j.status = 'failed'; j.error = e && e.message ? e.message : 'unknown error'; j.updated_at = nowISO();
@@ -758,7 +810,8 @@ app.post('/seasons/query-jobs', asyncH(async (req, res) => {
 }));
 
 app.post('/episodes/query-jobs', asyncH(async (req, res) => {
-  const { show_id, season_number, title, delay_ms } = req.body || {};
+  const { show_id, season_number, title, character_name, include, delay_ms } = req.body || {};
+  const includeTree = parseIncludeParam(include);
   const jobId = randomUUID();
   const delay = Number.isFinite(delay_ms) ? Math.max(500, Math.min(60000, Number(delay_ms))) : (2000 + Math.floor(Math.random()*6000));
   const job = { id: jobId, status: 'queued', created_at: nowISO(), updated_at: nowISO(), eta_ms: delay, result: null, rowsCount: null, error: null, filename: `episodes_query_${jobId}.json` };
@@ -767,8 +820,8 @@ app.post('/episodes/query-jobs', asyncH(async (req, res) => {
     const j = jobs.get(jobId); if (!j) return;
     j.status = 'running'; j.updated_at = nowISO();
     try {
-      const rows = await runEpisodeQuery({ show_id, season_number, title });
-      const payload = Buffer.from(JSON.stringify({ filters: { show_id, season_number, title }, count: rows.length, rows }, null, 2));
+      const rows = await runEpisodeQuery({ show_id, season_number, title, character_name }, includeTree);
+      const payload = Buffer.from(JSON.stringify({ filters: { show_id, season_number, title, character_name, include }, count: rows.length, rows }, null, 2));
       j.result = payload; j.rowsCount = rows.length; j.status = 'completed'; j.updated_at = nowISO();
     } catch (e) {
       j.status = 'failed'; j.error = e && e.message ? e.message : 'unknown error'; j.updated_at = nowISO();
@@ -778,7 +831,8 @@ app.post('/episodes/query-jobs', asyncH(async (req, res) => {
 }));
 
 app.post('/characters/query-jobs', asyncH(async (req, res) => {
-  const { show_id, name, actor_id, delay_ms } = req.body || {};
+  const { show_id, name, actor_id, actor_name, include, delay_ms } = req.body || {};
+  const includeTree = parseIncludeParam(include);
   const jobId = randomUUID();
   const delay = Number.isFinite(delay_ms) ? Math.max(500, Math.min(60000, Number(delay_ms))) : (2000 + Math.floor(Math.random()*6000));
   const job = { id: jobId, status: 'queued', created_at: nowISO(), updated_at: nowISO(), eta_ms: delay, result: null, rowsCount: null, error: null, filename: `characters_query_${jobId}.json` };
@@ -787,8 +841,8 @@ app.post('/characters/query-jobs', asyncH(async (req, res) => {
     const j = jobs.get(jobId); if (!j) return;
     j.status = 'running'; j.updated_at = nowISO();
     try {
-      const rows = await runCharacterQuery({ show_id, name, actor_id });
-      const payload = Buffer.from(JSON.stringify({ filters: { show_id, name, actor_id }, count: rows.length, rows }, null, 2));
+      const rows = await runCharacterQuery({ show_id, name, actor_id, actor_name }, includeTree);
+      const payload = Buffer.from(JSON.stringify({ filters: { show_id, name, actor_id, actor_name, include }, count: rows.length, rows }, null, 2));
       j.result = payload; j.rowsCount = rows.length; j.status = 'completed'; j.updated_at = nowISO();
     } catch (e) {
       j.status = 'failed'; j.error = e && e.message ? e.message : 'unknown error'; j.updated_at = nowISO();
