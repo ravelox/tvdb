@@ -1,0 +1,606 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TV Shows API",
+    "version": "1.0.5",
+    "description": "CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "tags": [
+    {
+      "name": "health"
+    },
+    {
+      "name": "actors"
+    },
+    {
+      "name": "shows"
+    },
+    {
+      "name": "seasons"
+    },
+    {
+      "name": "episodes"
+    },
+    {
+      "name": "characters"
+    },
+    {
+      "name": "links"
+    },
+    {
+      "name": "jobs"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Actor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Show": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "Season": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "show_id": {
+            "type": "integer"
+          },
+          "season_number": {
+            "type": "integer"
+          },
+          "year": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "Episode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "season_id": {
+            "type": "integer"
+          },
+          "show_id": {
+            "type": "integer"
+          },
+          "air_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "Character": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "show_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "actor_id": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "JobStatus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "eta_ms": {
+            "type": "integer"
+          },
+          "download_url": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Service/DB health",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/init": {
+      "post": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Initialize DB/schema",
+        "responses": {
+          "200": {
+            "description": "Initialized"
+          }
+        }
+      }
+    },
+    "/actors": {
+      "get": {
+        "tags": [
+          "actors"
+        ],
+        "summary": "List actors"
+      },
+      "post": {
+        "tags": [
+          "actors"
+        ],
+        "summary": "Create actor"
+      }
+    },
+    "/actors/{id}": {
+      "get": {
+        "tags": [
+          "actors"
+        ],
+        "summary": "Get actor"
+      },
+      "put": {
+        "tags": [
+          "actors"
+        ],
+        "summary": "Update actor"
+      },
+      "delete": {
+        "tags": [
+          "actors"
+        ],
+        "summary": "Delete actor"
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/shows": {
+      "get": {
+        "tags": [
+          "shows"
+        ],
+        "summary": "List shows"
+      },
+      "post": {
+        "tags": [
+          "shows"
+        ],
+        "summary": "Create show"
+      }
+    },
+    "/shows/{id}": {
+      "get": {
+        "tags": [
+          "shows"
+        ],
+        "summary": "Get show"
+      },
+      "put": {
+        "tags": [
+          "shows"
+        ],
+        "summary": "Update show"
+      },
+      "delete": {
+        "tags": [
+          "shows"
+        ],
+        "summary": "Delete show"
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/shows/{showId}/seasons": {
+      "get": {
+        "tags": [
+          "seasons"
+        ],
+        "summary": "List seasons for show"
+      },
+      "post": {
+        "tags": [
+          "seasons"
+        ],
+        "summary": "Create season for show"
+      },
+      "parameters": [
+        {
+          "name": "showId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/seasons/{id}": {
+      "get": {
+        "tags": [
+          "seasons"
+        ],
+        "summary": "Get season"
+      },
+      "put": {
+        "tags": [
+          "seasons"
+        ],
+        "summary": "Update season"
+      },
+      "delete": {
+        "tags": [
+          "seasons"
+        ],
+        "summary": "Delete season"
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/shows/{showId}/episodes": {
+      "get": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "List episodes for show"
+      },
+      "post": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "Create episode under a season by season_number"
+      },
+      "parameters": [
+        {
+          "name": "showId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/episodes/{id}": {
+      "get": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "Get episode (includes characters array)"
+      },
+      "put": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "Update episode"
+      },
+      "delete": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "Delete episode"
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/shows/{showId}/characters": {
+      "get": {
+        "tags": [
+          "characters"
+        ],
+        "summary": "List characters for show"
+      },
+      "post": {
+        "tags": [
+          "characters"
+        ],
+        "summary": "Create character for show"
+      },
+      "parameters": [
+        {
+          "name": "showId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/characters/{id}": {
+      "get": {
+        "tags": [
+          "characters"
+        ],
+        "summary": "Get character"
+      },
+      "put": {
+        "tags": [
+          "characters"
+        ],
+        "summary": "Update character"
+      },
+      "delete": {
+        "tags": [
+          "characters"
+        ],
+        "summary": "Delete character"
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/episodes/{episodeId}/characters": {
+      "get": {
+        "tags": [
+          "links"
+        ],
+        "summary": "List characters in episode"
+      },
+      "post": {
+        "tags": [
+          "links"
+        ],
+        "summary": "Link (or create+link) character to episode"
+      },
+      "parameters": [
+        {
+          "name": "episodeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/episodes/{episodeId}/characters/{characterId}": {
+      "delete": {
+        "tags": [
+          "links"
+        ],
+        "summary": "Unlink character from episode"
+      },
+      "parameters": [
+        {
+          "name": "episodeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "characterId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/shows/query-jobs": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Start simulated long‑running TV show query"
+      }
+    },
+    "/seasons/query-jobs": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Start simulated long‑running season query"
+      }
+    },
+    "/episodes/query-jobs": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Start simulated long‑running episode query"
+      }
+    },
+    "/characters/query-jobs": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Start simulated long‑running character query"
+      }
+    },
+    "/actors/query-jobs": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Start simulated long‑running actor query"
+      }
+    },
+    "/jobs/{id}": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Poll job status"
+      },
+      "delete": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Delete job"
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/jobs/{id}/download": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Download job results (JSON)"
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/seasons/{id}/episodes": {
+      "get": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "List episodes for a specific season",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
+    "/shows/{showId}/seasons/{seasonNumber}/episodes": {
+      "get": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "List episodes by show+season_number",
+        "parameters": [
+          {
+            "name": "showId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "seasonNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
