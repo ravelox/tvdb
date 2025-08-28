@@ -65,6 +65,24 @@ curl -s -X PUT "$API/shows/$SHOW_ID" -H 'Content-Type: application/json' -d '{"t
 # curl -i -X DELETE "$API/shows/$SHOW_ID"
 ```
 
+### Filtering & nested resources
+```bash
+# Only shows created in 2024
+curl -s "$API/shows?start=2024-01-01T00:00:00Z&end=2024-12-31T23:59:59Z" | jq .
+# Fetch a show with seasons, episodes, and characters embedded
+curl -s "$API/shows/$SHOW_ID?include=seasons,seasons.episodes,seasons.episodes.characters" | jq .
+
+# Only episodes created in 2024
+curl -s "$API/episodes?start=2024-01-01T00:00:00Z&end=2024-12-31T23:59:59Z" | jq .
+# Fetch episodes with character+actor data embedded
+curl -s "$API/episodes?include=characters,characters.actor" | jq .
+
+# Only actors created in 2024
+curl -s "$API/actors?start=2024-01-01T00:00:00Z&end=2024-12-31T23:59:59Z" | jq .
+# Fetch an actor with their characters and shows embedded
+curl -s "$API/actors/$ACTOR_ID?include=characters,characters.show" | jq .
+```
+
 ### Seasons
 ```bash
 SEASON_ID=$(curl -s -X POST "$API/shows/$SHOW_ID/seasons" -H 'Content-Type: application/json' -d '{"season_number":12, "year":1974}' | jq -r '.id'); echo "$SEASON_ID"
