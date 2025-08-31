@@ -10,8 +10,10 @@ spec:
     storage: 500Mi
   accessModes:
   - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
   hostPath:
     path: "/vagrant/data/mysql"
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -21,6 +23,7 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
+  storageClassName: manual
   resources:
     requests:
       storage: 500Mi

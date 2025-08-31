@@ -5,6 +5,7 @@ metadata:
   labels:
     app: tvdb
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: tvdb
@@ -14,7 +15,8 @@ spec:
         app: tvdb
     spec:
       containers:
-      - image: mysql:9
+      - image: mysql:8.0
+        imagePullPolicy: IfNotPresent
         name: mysql
         env:
         - name: MYSQL_ROOT_PASSWORD

@@ -5,6 +5,7 @@ metadata:
   labels:
     app: tvdb
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: tvdb
@@ -16,14 +17,10 @@ spec:
       containers:
       - name: tvdb-app
         image: ravelox/tvdb:1.0.0
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
         env:
-        # - name: CONFIG_SETTING
-        #   valueFrom:
-        #     configMapKeyRef:
-        #       name: my-configmap
-        #       key: setting-value
         - name: PORT
           value: "3000"
         - name: DB_HOST
