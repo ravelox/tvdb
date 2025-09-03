@@ -26,6 +26,7 @@ const fs = require('fs');
 const path = require('path');
 const { randomUUID } = require('crypto');
 require('dotenv').config();
+const pkg = require('./package.json');
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const DB_HOST = process.env.DB_HOST || 'localhost';
@@ -108,7 +109,7 @@ const openapiBase = {
   openapi: '3.0.3',
   info: {
     title: 'TV Shows API',
-    version: '1.0.5',
+    version: pkg.version,
     description: 'CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs.'
   },
   servers: [], // populated dynamically per request
@@ -1113,7 +1114,7 @@ app.get(['/graphql.json', '/.well-known/graphql.json'], (req, res) => {
   for (const [name, fn] of Object.entries(root)) {
     operations[name] = extractArgNames(fn);
   }
-  res.json({ operations });
+  res.json({ version: pkg.version, operations });
 });
 
 app.post('/graphql', asyncH(async (req, res) => {

@@ -2,6 +2,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
+const pkg = require('../package.json');
 
 let serverProcess;
 
@@ -35,6 +36,7 @@ test('GraphQL discovery', async () => {
   const res = await fetch('http://localhost:3001/graphql.json');
   const json = await res.json();
   assert.strictEqual(res.status, 200);
+  assert.strictEqual(json.version, pkg.version);
   assert.ok(json.operations && json.operations.health);
 });
 
