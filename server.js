@@ -768,6 +768,369 @@ async function runActorQuery(filters){
   return rows;
 }
 
+// --------------------------- GraphQL ---------------------------
+function mapActor(row) {
+  return row ? { id: row.id, name: row.name } : null;
+}
+
+function mapCharacter(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    actor: async () => {
+      if (!row.actor_id) return null;
+      const [rows] = await pool.execute('SELECT id, name FROM actors WHERE id=?', [row.actor_id]);
+      return mapActor(rows[0]);
+    }
+  };
+}
+
+function mapEpisode(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    characters: async () => {
+      const [chars] = await pool.query(
+        `SELECT c.id, c.show_id, c.name, c.actor_id
+         FROM episode_characters ec
+         JOIN characters c ON c.id = ec.character_id
+         WHERE ec.episode_id=? ORDER BY c.name`, [row.id]
+      );
+      return chars.map(mapCharacter);
+    }
+  };
+}
+
+function mapSeason(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    episodes: async () => {
+      const eps = await runEpisodeQuery({ season_id: row.id });
+      return eps.map(mapEpisode);
+    }
+  };
+}
+
+function mapShow(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    seasons: async () => {
+      const [rows] = await pool.execute('SELECT id, show_id, season_number, year FROM seasons WHERE show_id=? ORDER BY season_number', [row.id]);
+      return rows.map(mapSeason);
+    },
+    episodes: async () => {
+      const eps = await runEpisodeQuery({ show_id: row.id });
+      return eps.map(mapEpisode);
+    },
+    characters: async () => {
+      const chars = await runCharacterQuery({ show_id: row.id });
+      return chars.map(mapCharacter);
+    }
+  };
+}
+
+function rootJobStart(type, input, runner) {
+  const { delay_ms, include, ...filters } = input || {};
+  const includeTree = parseIncludeParam(include);
+  const jobId = randomUUID();
+  const delay = Number.isFinite(delay_ms) ? Math.max(500, Math.min(60000, Number(delay_ms))) : (2000 + Math.floor(Math.random()*6000));
+  const job = { id: jobId, status: 'queued', created_at: nowISO(), updated_at: nowISO(), eta_ms: delay, result: null, rowsCount: null, error: null, filename: `${type}_query_${jobId}.json` };
+  jobs.set(jobId, job);
+  setTimeout(async () => {
+    const j = jobs.get(jobId); if (!j) return;
+    j.status = 'running'; j.updated_at = nowISO();
+    try {
+      const rows = await runner(filters, includeTree);
+      const payload = Buffer.from(JSON.stringify({ filters: { ...filters, include }, count: rows.length, rows }, null, 2));
+      j.result = payload; j.rowsCount = rows.length; j.status = 'completed'; j.updated_at = nowISO();
+    } catch (e) {
+      j.status = 'failed'; j.error = e && e.message ? e.message : 'unknown error'; j.updated_at = nowISO();
+    }
+  }, delay);
+  return { id: jobId, status: job.status, eta_ms: job.eta_ms, download_url: `/jobs/${jobId}/download`, error: job.error };
+}
+
+const root = {
+  health: async () => {
+    try {
+      const [rows] = await pool.query('SELECT 1 AS ok');
+      return { ok: true, db: rows[0].ok === 1 };
+    } catch {
+      return { ok: false, db: false };
+    }
+  },
+  actors: async () => (await runActorQuery({})).map(mapActor),
+  actor: async ({ id }) => {
+    const [rows] = await pool.execute('SELECT id, name FROM actors WHERE id=?', [id]);
+    return mapActor(rows[0]);
+  },
+  shows: async () => (await runShowQuery()).map(mapShow),
+  show: async ({ id }) => mapShow((await runShowQuery({ id }))[0]),
+  seasons: async ({ show_id }) => (await runSeasonQuery({ show_id })).map(mapSeason),
+  season: async ({ id }) => {
+    const [rows] = await pool.execute('SELECT id, show_id, season_number, year FROM seasons WHERE id=?', [id]);
+    return mapSeason(rows[0]);
+    },
+  episodes: async ({ show_id, season_id }) => (await runEpisodeQuery({ show_id, season_id })).map(mapEpisode),
+  episode: async ({ id }) => mapEpisode((await runEpisodeQuery({ id }))[0]),
+  characters: async ({ show_id }) => (await runCharacterQuery({ show_id })).map(mapCharacter),
+  character: async ({ id }) => mapCharacter((await runCharacterQuery({ id }))[0]),
+  job: async ({ id }) => {
+    const j = jobs.get(id);
+    return j ? { id: j.id, status: j.status, eta_ms: j.eta_ms, download_url: j.status === 'completed' ? `/jobs/${j.id}/download` : null, error: j.error } : null;
+  },
+  jobResult: async ({ id }) => {
+    const j = jobs.get(id);
+    return j && j.status === 'completed' ? j.result.toString() : null;
+  },
+  init: async () => { await initDatabase(); return true; },
+  createActor: async ({ name }) => {
+    const [result] = await pool.execute(
+      'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
+      [name]
+    );
+    const [rows] = await pool.execute('SELECT id, name FROM actors WHERE id=?', [result.insertId]);
+    return mapActor(rows[0] || { id: result.insertId, name });
+  },
+  updateActor: async ({ id, name }) => {
+    const [r] = await pool.execute('UPDATE actors SET name=? WHERE id=?', [name, id]);
+    if (!r.affectedRows) throw new Error('actor not found');
+    const [rows] = await pool.execute('SELECT id, name FROM actors WHERE id=?', [id]);
+    return mapActor(rows[0] || { id, name });
+  },
+  deleteActor: async ({ id }) => {
+    const [r] = await pool.execute('DELETE FROM actors WHERE id=?', [id]);
+    return r.affectedRows > 0;
+  },
+  createShow: async ({ title, description, year }) => {
+    const [result] = await pool.execute(
+      'INSERT INTO shows (title, description, year) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE description=VALUES(description), year=VALUES(year), id=LAST_INSERT_ID(id)',
+      [title, description || null, year || null]
+    );
+    const [rows] = await pool.execute('SELECT id, title, description, year FROM shows WHERE id=?', [result.insertId]);
+    return mapShow(rows[0] || { id: result.insertId, title, description, year });
+  },
+  updateShow: async ({ id, title, description, year }) => {
+    const [r] = await pool.execute('UPDATE shows SET title=?, description=?, year=? WHERE id=?', [title, description || null, year || null, id]);
+    if (!r.affectedRows) throw new Error('show not found');
+    const [rows] = await pool.execute('SELECT id, title, description, year FROM shows WHERE id=?', [id]);
+    return mapShow(rows[0] || { id, title, description, year });
+  },
+  deleteShow: async ({ id }) => {
+    const [r] = await pool.execute('DELETE FROM shows WHERE id=?', [id]);
+    return r.affectedRows > 0;
+  },
+  createSeason: async ({ show_id, season_number, year }) => {
+    const [show] = await pool.execute('SELECT id FROM shows WHERE id=?', [show_id]);
+    if (!show.length) throw new Error('show not found');
+    const [result] = await pool.execute(
+      'INSERT INTO seasons (show_id, season_number, year) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE year=VALUES(year), id=LAST_INSERT_ID(id)',
+      [show_id, season_number, year || null]
+    );
+    const [rows] = await pool.execute('SELECT id, show_id, season_number, year FROM seasons WHERE id=?', [result.insertId]);
+    return mapSeason(rows[0] || { id: result.insertId, show_id, season_number, year });
+  },
+  updateSeason: async ({ id, season_number, year }) => {
+    const [r] = await pool.execute('UPDATE seasons SET season_number=?, year=? WHERE id=?', [season_number, year || null, id]);
+    if (!r.affectedRows) throw new Error('season not found');
+    const [rows] = await pool.execute('SELECT id, show_id, season_number, year FROM seasons WHERE id=?', [id]);
+    return mapSeason(rows[0] || { id, season_number, year });
+  },
+  deleteSeason: async ({ id }) => {
+    const [r] = await pool.execute('DELETE FROM seasons WHERE id=?', [id]);
+    return r.affectedRows > 0;
+  },
+  createEpisode: async ({ show_id, season_number, air_date, title, description }) => {
+    const seasonId = await getSeasonIdByShowAndNumber(show_id, season_number);
+    if (!seasonId) throw new Error('season does not exist for this show');
+    const [result] = await pool.execute(
+      'INSERT INTO episodes (season_id, air_date, title, description) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE air_date=VALUES(air_date), description=VALUES(description), id=LAST_INSERT_ID(id)',
+      [seasonId, air_date || null, title, description || null]
+    );
+    const [rows] = await pool.execute(`SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?`, [result.insertId]);
+    return mapEpisode(rows[0] || { id: result.insertId, season_id: seasonId, show_id, season_number, air_date, title, description });
+  },
+  updateEpisode: async ({ id, season_number, air_date, title, description }) => {
+    let seasonId = null;
+    if (season_number != null) {
+      const [cur] = await pool.execute('SELECT s.show_id FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?', [id]);
+      if (!cur.length) throw new Error('episode not found');
+      seasonId = await getSeasonIdByShowAndNumber(cur[0].show_id, season_number);
+      if (!seasonId) throw new Error('season does not exist for this show');
+    }
+    const fields = [];
+    const params = [];
+    if (seasonId != null) { fields.push('season_id=?'); params.push(seasonId); }
+    if (air_date !== undefined) { fields.push('air_date=?'); params.push(air_date || null); }
+    if (title !== undefined) { fields.push('title=?'); params.push(title || null); }
+    if (description !== undefined) { fields.push('description=?'); params.push(description || null); }
+    if (!fields.length) throw new Error('no fields to update');
+    params.push(id);
+    const [r] = await pool.execute(`UPDATE episodes SET ${fields.join(', ')} WHERE id=?`, params);
+    if (!r.affectedRows) throw new Error('episode not found');
+    const [rows] = await pool.execute(`SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?`, [id]);
+    return mapEpisode(rows[0] || { id, season_id: seasonId, air_date, title, description });
+  },
+  deleteEpisode: async ({ id }) => {
+    const [r] = await pool.execute('DELETE FROM episodes WHERE id=?', [id]);
+    return r.affectedRows > 0;
+  },
+  createCharacter: async ({ show_id, name, actor_id, actor_name }) => {
+    let finalActorId = actor_id || null;
+    if (!finalActorId && actor_name) {
+      const [r] = await pool.execute('INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)', [actor_name]);
+      finalActorId = r.insertId;
+    }
+    const [result] = await pool.execute('INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)', [show_id, name, finalActorId]);
+    const [rows] = await pool.execute('SELECT c.id, c.show_id, c.name, c.actor_id FROM characters c WHERE c.id=?', [result.insertId]);
+    return mapCharacter(rows[0] || { id: result.insertId, show_id, name, actor_id: finalActorId });
+  },
+  updateCharacter: async ({ id, name, actor_id, actor_name }) => {
+    const fields = [];
+    const params = [];
+    if (name !== undefined) { fields.push('name=?'); params.push(name || null); }
+    let finalActorId = actor_id === undefined ? undefined : actor_id;
+    if (finalActorId === undefined && actor_name !== undefined) {
+      if (actor_name === null) {
+        finalActorId = null;
+      } else if (actor_name) {
+        const [r] = await pool.execute('INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)', [actor_name]);
+        finalActorId = r.insertId;
+      }
+    }
+    if (finalActorId !== undefined) { fields.push('actor_id=?'); params.push(finalActorId); }
+    if (!fields.length) throw new Error('no fields to update');
+    params.push(id);
+    const [r] = await pool.execute(`UPDATE characters SET ${fields.join(', ')} WHERE id=?`, params);
+    if (!r.affectedRows) throw new Error('character not found');
+    const [rows] = await pool.execute('SELECT c.id, c.show_id, c.name, c.actor_id FROM characters c WHERE c.id=?', [id]);
+    return mapCharacter(rows[0] || { id, name, actor_id: finalActorId });
+  },
+  deleteCharacter: async ({ id }) => {
+    const [r] = await pool.execute('DELETE FROM characters WHERE id=?', [id]);
+    return r.affectedRows > 0;
+  },
+  addCharacterToEpisode: async ({ episode_id, character_id, character_name, actor_id, actor_name }) => {
+    let charId = character_id || null;
+    if (!charId) {
+      const [ep] = await pool.execute('SELECT s.show_id FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?', [episode_id]);
+      if (!ep.length) throw new Error('episode not found');
+      let actId = actor_id || null;
+      if (!actId && actor_name) {
+        const [r] = await pool.execute('INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)', [actor_name]);
+        actId = r.insertId;
+      }
+      const [cr] = await pool.execute('INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)', [ep[0].show_id, character_name, actId]);
+      charId = cr.insertId;
+    }
+    await pool.execute('INSERT IGNORE INTO episode_characters (episode_id, character_id) VALUES (?, ?)', [episode_id, charId]);
+    const [rows] = await pool.query('SELECT c.id, c.show_id, c.name, c.actor_id FROM characters c WHERE c.id=?', [charId]);
+    return mapCharacter(rows[0] || { id: charId });
+  },
+  removeCharacterFromEpisode: async ({ episode_id, character_id }) => {
+    const [r] = await pool.execute('DELETE FROM episode_characters WHERE episode_id=? AND character_id=?', [episode_id, character_id]);
+    return r.affectedRows > 0;
+  },
+  startShowsJob: async (args) => rootJobStart('shows', args, (f, i) => runShowQuery(f, i)),
+  startSeasonsJob: async (args) => rootJobStart('seasons', args, (f) => runSeasonQuery(f)),
+  startEpisodesJob: async (args) => rootJobStart('episodes', args, (f, i) => runEpisodeQuery(f, i)),
+  startCharactersJob: async (args) => rootJobStart('characters', args, (f, i) => runCharacterQuery(f, i)),
+  startActorsJob: async (args) => rootJobStart('actors', args, (f) => runActorQuery(f)),
+  deleteJob: async ({ id }) => { if (!jobs.has(id)) return false; jobs.delete(id); return true; }
+};
+
+async function resolveFunctions(val) {
+  if (Array.isArray(val)) return Promise.all(val.map(resolveFunctions));
+  if (val && typeof val === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(val)) {
+      if (typeof v === 'function') {
+        out[k] = await resolveFunctions(await v());
+      } else {
+        out[k] = await resolveFunctions(v);
+      }
+    }
+    return out;
+  }
+  return val;
+}
+
+function parseGraphQL(q) {
+  q = q.trim();
+  if (q.startsWith('mutation')) {
+    q = q.replace(/^mutation\s*/, '');
+  }
+  q = q.replace(/^\{/, '').replace(/\}$/, '').trim();
+  const m = /^([A-Za-z_][A-Za-z0-9_]*)\s*(\(([^)]*)\))?/.exec(q);
+  if (!m) return null;
+  const field = m[1];
+  const argsStr = m[3] || '';
+  const args = {};
+  if (argsStr.trim()) {
+    for (const part of argsStr.split(',').map(s => s.trim()).filter(Boolean)) {
+      const [k, v] = part.split(':').map(s => s.trim());
+      if (!k) continue;
+      if (/^".*"$/.test(v)) {
+        args[k] = v.slice(1, -1);
+      } else if (v === 'null') {
+        args[k] = null;
+      } else if (v === 'true' || v === 'false') {
+        args[k] = v === 'true';
+      } else if (!isNaN(Number(v))) {
+        args[k] = Number(v);
+      } else {
+        args[k] = v;
+      }
+    }
+  }
+  return { field, args };
+}
+
+function extractArgNames(fn) {
+  const src = fn.toString();
+  const objMatch = src.match(/\(\s*{([^}]*)}\s*\)/);
+  if (objMatch) {
+    return objMatch[1]
+      .split(',')
+      .map(s => s.trim().split('=')[0])
+      .filter(Boolean);
+  }
+  const plainMatch = src.match(/\(\s*([^)]*)\)/);
+  if (plainMatch && plainMatch[1].trim()) {
+    return plainMatch[1]
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .filter(n => n !== 'args');
+  }
+  return [];
+}
+
+app.get(['/graphql.json', '/.well-known/graphql.json'], (req, res) => {
+  const operations = {};
+  for (const [name, fn] of Object.entries(root)) {
+    operations[name] = extractArgNames(fn);
+  }
+  res.json({ operations });
+});
+
+app.post('/graphql', asyncH(async (req, res) => {
+  const { query } = req.body || {};
+  if (typeof query !== 'string') {
+    return res.status(400).json({ errors: ['query must be string'] });
+  }
+  const parsed = parseGraphQL(query);
+  if (!parsed || !root[parsed.field]) {
+    return res.status(400).json({ errors: ['unknown field'] });
+  }
+  const result = await root[parsed.field](parsed.args || {});
+  const data = {};
+  data[parsed.field] = await resolveFunctions(result);
+  res.json({ data });
+}));
+
 app.post('/shows/query-jobs', asyncH(async (req, res) => {
   const { title, year_min, year_max, episode_title, include, delay_ms } = req.body || {};
   const includeTree = parseIncludeParam(include);
