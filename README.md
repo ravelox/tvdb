@@ -6,6 +6,8 @@ This project implements:
 - Simulated long-running job queries with polling + downloadable results
 - Auto DB initialization on start (runs `schema.sql`)
 - **API discovery** via OpenAPI at `/openapi.json` (+ optional Swagger UI at `/docs`)
+- **GraphQL endpoint** at `/graphql` mirroring CRUD operations and jobs
+- **GraphQL discovery** at `/graphql.json` (also `/.well-known/graphql.json`)
 - **Season episodes endpoints:** `GET /seasons/:id/episodes` and `GET /shows/:showId/seasons/:seasonNumber/episodes`
 
 ## Quick start
@@ -45,6 +47,31 @@ curl -s "$API/health" | jq .
 curl -s "$API/openapi.json" | jq .info
 curl -s "$API/spec" | jq .info
 curl -s "$API/.well-known/openapi.json" | jq .info
+```
+
+### GraphQL discovery
+```bash
+curl -s "$API/graphql.json" | jq .
+curl -s "$API/.well-known/graphql.json" | jq .
+```
+
+### GraphQL queries
+All REST functionality is also exposed via a lightweight GraphQL endpoint at `/graphql`.
+```bash
+# Health check
+curl -s -X POST "$API/graphql" \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"{ health { ok db } }"}' | jq .
+
+# Create an actor via mutation
+curl -s -X POST "$API/graphql" \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"mutation { createActor(name:\"Sarah Jane\") { id name } }"}' | jq .
+
+# Fetch a show with nested seasons and episodes
+curl -s -X POST "$API/graphql" \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"{ show(id:1) { title seasons { season_number episodes { title } } } }"}' | jq .
 ```
 
 ### Actors
