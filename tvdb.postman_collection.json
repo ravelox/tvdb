@@ -13,17 +13,7 @@
           "name": "GET /health",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/health",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "health"
-              ]
-            },
+            "url": "{{baseUrl}}/health",
             "description": "Service/DB health"
           }
         },
@@ -31,17 +21,7 @@
           "name": "POST /init",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/init",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "init"
-              ]
-            },
+            "url": "{{baseUrl}}/init",
             "description": "Initialize DB/schema"
           }
         }
@@ -54,17 +34,7 @@
           "name": "GET /actors",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/actors",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "actors"
-              ]
-            },
+            "url": "{{baseUrl}}/actors",
             "description": "List actors"
           }
         },
@@ -72,17 +42,7 @@
           "name": "POST /actors",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/actors",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "actors"
-              ]
-            },
+            "url": "{{baseUrl}}/actors",
             "description": "Create actor"
           }
         },
@@ -90,18 +50,7 @@
           "name": "GET /actors/{id}",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/actors/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "actors",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/actors/{id}",
             "description": "Get actor"
           }
         },
@@ -109,18 +58,7 @@
           "name": "PUT /actors/{id}",
           "request": {
             "method": "PUT",
-            "url": {
-              "raw": "http://localhost:3000/actors/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "actors",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/actors/{id}",
             "description": "Update actor"
           }
         },
@@ -128,18 +66,7 @@
           "name": "DELETE /actors/{id}",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "http://localhost:3000/actors/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "actors",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/actors/{id}",
             "description": "Delete actor"
           }
         }
@@ -152,18 +79,7 @@
           "name": "PARAMETERS /actors/{id}",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/actors/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "actors",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/actors/{id}",
             "description": ""
           }
         },
@@ -171,18 +87,7 @@
           "name": "PARAMETERS /shows/{id}",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/shows/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{id}",
             "description": ""
           }
         },
@@ -190,19 +95,7 @@
           "name": "PARAMETERS /shows/{showId}/seasons",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/shows/{showId}/seasons",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{showId}",
-                "seasons"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{showId}/seasons",
             "description": ""
           }
         },
@@ -210,18 +103,7 @@
           "name": "PARAMETERS /seasons/{id}",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/seasons/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "seasons",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/seasons/{id}",
             "description": ""
           }
         },
@@ -229,19 +111,7 @@
           "name": "PARAMETERS /shows/{showId}/episodes",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/shows/{showId}/episodes",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{showId}",
-                "episodes"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{showId}/episodes",
             "description": ""
           }
         },
@@ -249,18 +119,7 @@
           "name": "PARAMETERS /episodes/{id}",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/episodes/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "episodes",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/episodes/{id}",
             "description": ""
           }
         },
@@ -268,19 +127,7 @@
           "name": "PARAMETERS /shows/{showId}/characters",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/shows/{showId}/characters",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{showId}",
-                "characters"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{showId}/characters",
             "description": ""
           }
         },
@@ -288,18 +135,7 @@
           "name": "PARAMETERS /characters/{id}",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/characters/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "characters",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/characters/{id}",
             "description": ""
           }
         },
@@ -307,19 +143,7 @@
           "name": "PARAMETERS /episodes/{episodeId}/characters",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/episodes/{episodeId}/characters",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "episodes",
-                "{episodeId}",
-                "characters"
-              ]
-            },
+            "url": "{{baseUrl}}/episodes/{episodeId}/characters",
             "description": ""
           }
         },
@@ -327,20 +151,7 @@
           "name": "PARAMETERS /episodes/{episodeId}/characters/{characterId}",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/episodes/{episodeId}/characters/{characterId}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "episodes",
-                "{episodeId}",
-                "characters",
-                "{characterId}"
-              ]
-            },
+            "url": "{{baseUrl}}/episodes/{episodeId}/characters/{characterId}",
             "description": ""
           }
         },
@@ -348,18 +159,7 @@
           "name": "PARAMETERS /jobs/{id}",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/jobs/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "jobs",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/jobs/{id}",
             "description": ""
           }
         },
@@ -367,19 +167,7 @@
           "name": "PARAMETERS /jobs/{id}/download",
           "request": {
             "method": "PARAMETERS",
-            "url": {
-              "raw": "http://localhost:3000/jobs/{id}/download",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "jobs",
-                "{id}",
-                "download"
-              ]
-            },
+            "url": "{{baseUrl}}/jobs/{id}/download",
             "description": ""
           }
         }
@@ -392,17 +180,7 @@
           "name": "GET /shows",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/shows",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows"
-              ]
-            },
+            "url": "{{baseUrl}}/shows",
             "description": "List shows"
           }
         },
@@ -410,17 +188,7 @@
           "name": "POST /shows",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/shows",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows"
-              ]
-            },
+            "url": "{{baseUrl}}/shows",
             "description": "Create show"
           }
         },
@@ -428,18 +196,7 @@
           "name": "GET /shows/{id}",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/shows/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{id}",
             "description": "Get show"
           }
         },
@@ -447,18 +204,7 @@
           "name": "PUT /shows/{id}",
           "request": {
             "method": "PUT",
-            "url": {
-              "raw": "http://localhost:3000/shows/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{id}",
             "description": "Update show"
           }
         },
@@ -466,18 +212,7 @@
           "name": "DELETE /shows/{id}",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "http://localhost:3000/shows/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{id}",
             "description": "Delete show"
           }
         }
@@ -490,19 +225,7 @@
           "name": "GET /shows/{showId}/seasons",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/shows/{showId}/seasons",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{showId}",
-                "seasons"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{showId}/seasons",
             "description": "List seasons for show"
           }
         },
@@ -510,19 +233,7 @@
           "name": "POST /shows/{showId}/seasons",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/shows/{showId}/seasons",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{showId}",
-                "seasons"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{showId}/seasons",
             "description": "Create season for show"
           }
         },
@@ -530,18 +241,7 @@
           "name": "GET /seasons/{id}",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/seasons/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "seasons",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/seasons/{id}",
             "description": "Get season"
           }
         },
@@ -549,18 +249,7 @@
           "name": "PUT /seasons/{id}",
           "request": {
             "method": "PUT",
-            "url": {
-              "raw": "http://localhost:3000/seasons/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "seasons",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/seasons/{id}",
             "description": "Update season"
           }
         },
@@ -568,18 +257,7 @@
           "name": "DELETE /seasons/{id}",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "http://localhost:3000/seasons/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "seasons",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/seasons/{id}",
             "description": "Delete season"
           }
         }
@@ -592,19 +270,7 @@
           "name": "GET /shows/{showId}/episodes",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/shows/{showId}/episodes",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{showId}",
-                "episodes"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{showId}/episodes",
             "description": "List episodes for show"
           }
         },
@@ -612,19 +278,7 @@
           "name": "POST /shows/{showId}/episodes",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/shows/{showId}/episodes",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{showId}",
-                "episodes"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{showId}/episodes",
             "description": "Create episode under a season by season_number"
           }
         },
@@ -632,18 +286,7 @@
           "name": "GET /episodes/{id}",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/episodes/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "episodes",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/episodes/{id}",
             "description": "Get episode (includes characters array)"
           }
         },
@@ -651,18 +294,7 @@
           "name": "PUT /episodes/{id}",
           "request": {
             "method": "PUT",
-            "url": {
-              "raw": "http://localhost:3000/episodes/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "episodes",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/episodes/{id}",
             "description": "Update episode"
           }
         },
@@ -670,18 +302,7 @@
           "name": "DELETE /episodes/{id}",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "http://localhost:3000/episodes/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "episodes",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/episodes/{id}",
             "description": "Delete episode"
           }
         },
@@ -689,19 +310,7 @@
           "name": "GET /seasons/{id}/episodes",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/seasons/{id}/episodes",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "seasons",
-                "{id}",
-                "episodes"
-              ]
-            },
+            "url": "{{baseUrl}}/seasons/{id}/episodes",
             "description": "List episodes for a specific season"
           }
         },
@@ -709,21 +318,7 @@
           "name": "GET /shows/{showId}/seasons/{seasonNumber}/episodes",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/shows/{showId}/seasons/{seasonNumber}/episodes",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{showId}",
-                "seasons",
-                "{seasonNumber}",
-                "episodes"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{showId}/seasons/{seasonNumber}/episodes",
             "description": "List episodes by show+season_number"
           }
         }
@@ -736,19 +331,7 @@
           "name": "GET /shows/{showId}/characters",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/shows/{showId}/characters",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{showId}",
-                "characters"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{showId}/characters",
             "description": "List characters for show"
           }
         },
@@ -756,19 +339,7 @@
           "name": "POST /shows/{showId}/characters",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/shows/{showId}/characters",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "{showId}",
-                "characters"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/{showId}/characters",
             "description": "Create character for show"
           }
         },
@@ -776,18 +347,7 @@
           "name": "GET /characters/{id}",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/characters/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "characters",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/characters/{id}",
             "description": "Get character"
           }
         },
@@ -795,18 +355,7 @@
           "name": "PUT /characters/{id}",
           "request": {
             "method": "PUT",
-            "url": {
-              "raw": "http://localhost:3000/characters/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "characters",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/characters/{id}",
             "description": "Update character"
           }
         },
@@ -814,18 +363,7 @@
           "name": "DELETE /characters/{id}",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "http://localhost:3000/characters/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "characters",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/characters/{id}",
             "description": "Delete character"
           }
         }
@@ -838,19 +376,7 @@
           "name": "GET /episodes/{episodeId}/characters",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/episodes/{episodeId}/characters",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "episodes",
-                "{episodeId}",
-                "characters"
-              ]
-            },
+            "url": "{{baseUrl}}/episodes/{episodeId}/characters",
             "description": "List characters in episode"
           }
         },
@@ -858,19 +384,7 @@
           "name": "POST /episodes/{episodeId}/characters",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/episodes/{episodeId}/characters",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "episodes",
-                "{episodeId}",
-                "characters"
-              ]
-            },
+            "url": "{{baseUrl}}/episodes/{episodeId}/characters",
             "description": "Link (or create+link) character to episode"
           }
         },
@@ -878,20 +392,7 @@
           "name": "DELETE /episodes/{episodeId}/characters/{characterId}",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "http://localhost:3000/episodes/{episodeId}/characters/{characterId}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "episodes",
-                "{episodeId}",
-                "characters",
-                "{characterId}"
-              ]
-            },
+            "url": "{{baseUrl}}/episodes/{episodeId}/characters/{characterId}",
             "description": "Unlink character from episode"
           }
         }
@@ -904,18 +405,7 @@
           "name": "POST /shows/query-jobs",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/shows/query-jobs",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "shows",
-                "query-jobs"
-              ]
-            },
+            "url": "{{baseUrl}}/shows/query-jobs",
             "description": "Start simulated long‑running TV show query"
           }
         },
@@ -923,18 +413,7 @@
           "name": "POST /seasons/query-jobs",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/seasons/query-jobs",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "seasons",
-                "query-jobs"
-              ]
-            },
+            "url": "{{baseUrl}}/seasons/query-jobs",
             "description": "Start simulated long‑running season query"
           }
         },
@@ -942,18 +421,7 @@
           "name": "POST /episodes/query-jobs",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/episodes/query-jobs",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "episodes",
-                "query-jobs"
-              ]
-            },
+            "url": "{{baseUrl}}/episodes/query-jobs",
             "description": "Start simulated long‑running episode query"
           }
         },
@@ -961,18 +429,7 @@
           "name": "POST /characters/query-jobs",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/characters/query-jobs",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "characters",
-                "query-jobs"
-              ]
-            },
+            "url": "{{baseUrl}}/characters/query-jobs",
             "description": "Start simulated long‑running character query"
           }
         },
@@ -980,18 +437,7 @@
           "name": "POST /actors/query-jobs",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "http://localhost:3000/actors/query-jobs",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "actors",
-                "query-jobs"
-              ]
-            },
+            "url": "{{baseUrl}}/actors/query-jobs",
             "description": "Start simulated long‑running actor query"
           }
         },
@@ -999,18 +445,7 @@
           "name": "GET /jobs/{id}",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/jobs/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "jobs",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/jobs/{id}",
             "description": "Poll job status"
           }
         },
@@ -1018,18 +453,7 @@
           "name": "DELETE /jobs/{id}",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "http://localhost:3000/jobs/{id}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "jobs",
-                "{id}"
-              ]
-            },
+            "url": "{{baseUrl}}/jobs/{id}",
             "description": "Delete job"
           }
         },
@@ -1037,23 +461,17 @@
           "name": "GET /jobs/{id}/download",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "http://localhost:3000/jobs/{id}/download",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "jobs",
-                "{id}",
-                "download"
-              ]
-            },
+            "url": "{{baseUrl}}/jobs/{id}/download",
             "description": "Download job results (JSON)"
           }
         }
       ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
     }
   ]
 }
