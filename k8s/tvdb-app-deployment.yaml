@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tvdb-app-deployment
+  namespace: tvdb
   labels:
     app: tvdb
 spec:
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
       - name: tvdb-app
-        image: ravelox/tvdb:1.0.0
+        image: ravelox/tvdb:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
