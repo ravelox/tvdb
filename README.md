@@ -18,6 +18,12 @@ npm start
 curl -s http://localhost:3000/health | jq .
 ```
 
+### Docker multi-arch build
+```bash
+npm run docker:build
+```
+Builds and pushes images for x86_64, arm64, and armv7 using `docker buildx`.
+
 ### OpenAPI & Docs
 - JSON spec: `GET /openapi.json` (also `/spec` and `/.well-known/openapi.json`)
 - Swagger UI (optional): `npm i swagger-ui-express` then open `http://localhost:3000/docs`

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "docker:build": "docker build -t ravelox/tvdb:latest -t ravelox/tvdb:${npm_package_version} ."
+    "docker:build": "./scripts/docker-buildx.sh"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
