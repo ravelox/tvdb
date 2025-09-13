@@ -27,6 +27,8 @@ const path = require('path');
 const { randomUUID } = require('crypto');
 require('dotenv').config();
 const pkg = require('./package.json');
+const log = (...args) => console.log(`[v${pkg.version}]`, ...args);
+const logError = (...args) => console.error(`[v${pkg.version}]`, ...args);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const DB_HOST = process.env.DB_HOST || 'localhost';
@@ -51,7 +53,7 @@ async function initDatabase() {
     const schemaPath = path.resolve(__dirname, 'schema.sql');
     const schemaSQL = fs.readFileSync(schemaPath, 'utf8');
     await conn.query(schemaSQL);
-    console.log('[init] Database and schema ensured');
+    log('[init] Database and schema ensured');
   } finally {
     await conn.end();
   }
@@ -61,7 +63,9 @@ let pool;
 
 const app = express();
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(morgan('dev', { stream: { write: msg => log(msg.trim()) } }));
+// simple admin web UI
+app.use('/admin', express.static(path.join(__dirname, 'public')));
 
 function httpError(res, code, message) { return res.status(code).json({ error: message }); }
 const asyncH = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -201,9 +205,9 @@ try {
     explorer: true,
     swaggerOptions: { url: '/openapi.json' }
   }));
-  console.log('[docs] Swagger UI available at /docs');
+  log('[docs] Swagger UI available at /docs');
 } catch (e) {
-  console.log('[docs] Install swagger-ui-express to enable /docs');
+  log('[docs] Install swagger-ui-express to enable /docs');
 }
 
 // --------------------------- Health ---------------------------
@@ -1270,9 +1274,9 @@ app.delete('/jobs/:id', asyncH(async (req, res) => {
       host: DB_HOST, port: DB_PORT, user: DB_USER, password: DB_PASSWORD, database: DB_NAME,
       waitForConnections: true, connectionLimit: 10, queueLimit: 0
     });
-    app.listen(PORT, () => { console.log(`API listening on http://localhost:${PORT}`); });
+    app.listen(PORT, () => { log(`API listening on http://localhost:${PORT}`); });
   } catch (err) {
-    console.error('Failed to initialize database', err);
+    logError('Failed to initialize database', err);
     process.exit(1);
   }
 })();

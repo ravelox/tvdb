@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const pkg = require('../package.json');
+const log = (...args) => console.log(`[v${pkg.version}]`, ...args);
 
 const specPath = path.resolve(__dirname, '..', 'openapi.json');
 const spec = JSON.parse(fs.readFileSync(specPath, 'utf8'));
@@ -46,4 +48,4 @@ for (const [route, methods] of Object.entries(spec.paths || {})) {
 
 const outPath = path.resolve(__dirname, '..', 'tvdb.postman_collection.json');
 fs.writeFileSync(outPath, JSON.stringify(collection, null, 2));
-console.log('Postman collection written to', outPath);
+log('Postman collection written to', outPath);

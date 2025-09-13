@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.9] - 2025-09-13
+### Changed
+- Prefixed all log output with the package version.
+- Bumped package, Postman collection, and spec versions to 1.0.9.
+
 ## [1.0.8] - 2025-09-04
 ### Changed
 - Bumped package, Docker Compose, Postman collection, and spec versions to 1.0.8.
