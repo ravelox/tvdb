@@ -24,6 +24,12 @@ npm run docker:build
 ```
 Builds and pushes images for x86_64, arm64, and armv7 using `docker buildx`.
 
+### Render the Helm chart
+```bash
+helm template tvdb charts/tvdb
+```
+Renders the Kubernetes manifests from `charts/tvdb` without installing the chart. Use `-f my-values.yaml` to supply custom values.
+
 ### OpenAPI & Docs
 - JSON spec: `GET /openapi.json` (also `/spec` and `/.well-known/openapi.json`)
 - Swagger UI (optional): `npm i swagger-ui-express` then open `http://localhost:3000/docs`
