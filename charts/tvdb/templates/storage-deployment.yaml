@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tvdb-storage-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: tvdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tvdb
+  template:
+    metadata:
+      labels:
+        app: tvdb
+    spec:
+      containers:
+      - image: {{ .Values.storage.image.repository }}:{{ .Values.storage.image.tag }}
+        imagePullPolicy: IfNotPresent
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: {{ .Values.storage.password | quote }}
+        ports:
+        - containerPort: 3306
+        readinessProbe:
+          exec:
+            command: ["mysqladmin", "ping", "-h", "127.0.0.1"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - name: tvdb-storage-volume
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: tvdb-storage-volume
+        persistentVolumeClaim:
+          claimName: tvdb-storage-pvc

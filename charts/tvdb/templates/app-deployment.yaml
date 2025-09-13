@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tvdb-app-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: tvdb
+spec:
+  replicas: {{ .Values.app.replicas }}
+  selector:
+    matchLabels:
+      app: tvdb
+  template:
+    metadata:
+      labels:
+        app: tvdb
+    spec:
+      initContainers:
+      - name: wait-for-storage
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -zv tvdb-database 3306; do echo waiting for database; sleep 2; done']
+      containers:
+      - name: tvdb-app
+        image: {{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: tvdb-database
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_USER
+          value: root
+        - name: DB_PASSWORD
+          value: {{ .Values.storage.password | quote }}
+        - name: DB_NAME
+          value: tvdb

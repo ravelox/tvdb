@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tvdb-storage-pv
+  namespace: {{ .Values.namespace }}
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: {{ .Values.storage.volume.storage }}
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: {{ .Values.storage.volume.hostPath | quote }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tvdb-storage-pvc
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: tvdb
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: {{ .Values.storage.volume.storage }}
