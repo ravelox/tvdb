@@ -7,13 +7,13 @@ platforms="linux/arm/v7,linux/arm64,linux/amd64"
 
 if docker buildx build --help 2>&1 | grep -q -- '--platform'; then
   docker buildx build --platform "$platforms" \
-    --tag ravelox/tvdb:latest \
-    --tag ravelox/tvdb:${npm_package_version} \
+    -t ravelox/tvdb:latest \
+    -t ravelox/tvdb:${npm_package_version} \
     --push .
 else
   docker buildx build \
-    --tag ravelox/tvdb:latest \
-    --tag ravelox/tvdb:${npm_package_version} \
+    -t ravelox/tvdb:latest \
+    -t ravelox/tvdb:${npm_package_version} \
     --push .
 fi
 
