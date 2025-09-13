@@ -24,17 +24,25 @@ npm run docker:build
 ```
 Builds and pushes images for x86_64, arm64, and armv7 using `docker buildx`.
 
-### Render the Helm chart
+### Helm deployment
+Render the manifests without installing:
 ```bash
 helm template tvdb charts/tvdb
 ```
-Renders the Kubernetes manifests from `charts/tvdb` without installing the chart. Use `-f my-values.yaml` to supply custom values.
-
-### Deploy the Helm chart
+Install (or upgrade) the release and create the namespace if it doesn't exist:
 ```bash
-helm install tvdb charts/tvdb
+helm upgrade --install tvdb charts/tvdb -n tvdb --create-namespace
 ```
-Installs the manifests into your cluster using the current Kubernetes context. Use `-f my-values.yaml` or `--set key=value` to customize the deployment. For idempotent upgrades, run `helm upgrade --install`.
+If the install fails with a message like:
+```
+PersistentVolume "tvdb-storage-pv" ... missing key "app.kubernetes.io/managed-by"
+```
+label and annotate the existing volume so Helm can manage it and retry the install:
+```bash
+kubectl label pv tvdb-storage-pv app.kubernetes.io/managed-by=Helm --overwrite
+kubectl annotate pv tvdb-storage-pv meta.helm.sh/release-name=tvdb meta.helm.sh/release-namespace=tvdb --overwrite
+```
+Use `-f my-values.yaml` or `--set key=value` to customize any of the values.
 
 ### OpenAPI & Docs
 - JSON spec: `GET /openapi.json` (also `/spec` and `/.well-known/openapi.json`)
