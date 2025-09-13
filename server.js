@@ -28,6 +28,12 @@ const { randomUUID } = require('crypto');
 require('dotenv').config();
 const pkg = require('./package.json');
 
+// Prepend version number to all log lines
+const originalLog = console.log;
+console.log = (...args) => originalLog(`[${pkg.version}]`, ...args);
+const originalError = console.error;
+console.error = (...args) => originalError(`[${pkg.version}]`, ...args);
+
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const DB_HOST = process.env.DB_HOST || 'localhost';
 const DB_PORT = process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306;
@@ -61,7 +67,11 @@ let pool;
 
 const app = express();
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(morgan('dev', {
+  stream: {
+    write: msg => console.log(msg.trim())
+  }
+}));
 // simple admin web UI
 app.use('/admin', express.static(path.join(__dirname, 'public')));
 
