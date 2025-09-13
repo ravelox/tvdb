@@ -29,7 +29,20 @@ Render the manifests without installing:
 ```bash
 helm template tvdb charts/tvdb
 ```
-Install (or upgrade) the release and create the namespace if it doesn't exist:
+Install (or upgrade) the release. If the `tvdb` namespace doesn't exist, choose one of the following:
+
+Option 1: create the namespace manually:
+```bash
+kubectl create namespace tvdb
+helm install tvdb charts/tvdb -f charts/tvdb/values.yaml --namespace tvdb
+```
+
+Option 2: let Helm create the namespace automatically:
+```bash
+helm install tvdb charts/tvdb -f charts/tvdb/values.yaml --namespace tvdb --create-namespace
+```
+
+To upgrade and ensure the namespace exists:
 ```bash
 helm upgrade --install tvdb charts/tvdb -n tvdb --create-namespace
 ```
