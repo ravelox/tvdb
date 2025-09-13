@@ -1,0 +1,14 @@
+namespace: tvdb
+app:
+  image:
+    repository: ravelox/tvdb
+    tag: latest
+  replicas: 1
+storage:
+  image:
+    repository: mysql
+    tag: "8.0"
+  password: admin
+  volume:
+    hostPath: /vagrant/data/mysql
+    storage: 500Mi
