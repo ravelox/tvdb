@@ -62,6 +62,8 @@ let pool;
 const app = express();
 app.use(express.json());
 app.use(morgan('dev'));
+// simple admin web UI
+app.use('/admin', express.static(path.join(__dirname, 'public')));
 
 function httpError(res, code, message) { return res.status(code).json({ error: message }); }
 const asyncH = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
