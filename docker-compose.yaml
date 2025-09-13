@@ -3,16 +3,23 @@ services:
     image: mysql:latest
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: admin 
+      MYSQL_ROOT_PASSWORD: admin
     volumes:
       - mysql-data:/var/lib/mysql
     ports:
       - "3336:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     restart: always
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       PMA_HOST: db
       MYSQL_ROOT_PASSWORD: admin
@@ -22,7 +29,8 @@ services:
     image: ravelox/tvdb:latest
     restart: always
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - "3001:3000"
     environment:

@@ -15,6 +15,10 @@ spec:
       labels:
         app: tvdb
     spec:
+      initContainers:
+      - name: wait-for-storage
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -zv tvdb-database 3306; do echo waiting for database; sleep 2; done']
       containers:
       - name: tvdb-app
         image: ravelox/tvdb:latest

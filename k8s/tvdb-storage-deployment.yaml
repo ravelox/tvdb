@@ -24,6 +24,11 @@ spec:
           value: admin
         ports:
         - containerPort: 3306
+        readinessProbe:
+          exec:
+            command: ["mysqladmin", "ping", "-h", "127.0.0.1"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
         volumeMounts:
         - name: tvdb-storage-volume
           mountPath: /var/lib/mysql
