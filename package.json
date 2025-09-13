@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "docker:build": "./scripts/docker-buildx.sh"
+    "docker:build": "./scripts/docker-build.sh"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
