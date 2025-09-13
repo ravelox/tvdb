@@ -30,6 +30,21 @@ helm template tvdb charts/tvdb
 ```
 Renders the Kubernetes manifests from `charts/tvdb` without installing the chart. Use `-f my-values.yaml` to supply custom values.
 
+### Deploy the Helm chart
+```bash
+helm install tvdb charts/tvdb
+```
+Installs the manifests into your cluster using the current Kubernetes context. Use `-f my-values.yaml` or `--set key=value` to customize the deployment. For idempotent upgrades, run `helm upgrade --install`.
+
+If installation fails because a `tvdb-storage-pv` volume already exists without Helm labels, either delete it or add the required metadata so Helm can take ownership:
+
+```bash
+kubectl label pv tvdb-storage-pv app.kubernetes.io/managed-by=Helm
+kubectl annotate pv tvdb-storage-pv meta.helm.sh/release-name=tvdb meta.helm.sh/release-namespace=default
+```
+
+Replace `default` if you are installing into a different namespace.
+
 ### OpenAPI & Docs
 - JSON spec: `GET /openapi.json` (also `/spec` and `/.well-known/openapi.json`)
 - Swagger UI (optional): `npm i swagger-ui-express` then open `http://localhost:3000/docs`
