@@ -3,29 +3,11 @@ kind: PersistentVolume
 metadata:
   name: tvdb-storage-pv
   namespace: tvdb
-  labels:
-    type: local
 spec:
-  storageClassName: manual
+  storageClassName: openebs-hostpath
+  volumeMode: Filesystem
   capacity:
     storage: 500Mi
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  hostPath:
-    path: "/vagrant/data/mysql"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: tvdb-storage-pvc
-  namespace: tvdb
-  labels:
-    app: tvdb
-spec:
-  accessModes:
-  - ReadWriteOnce
-  storageClassName: manual
-  resources:
-    requests:
-      storage: 500Mi
