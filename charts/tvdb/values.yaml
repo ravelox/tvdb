@@ -2,13 +2,24 @@ namespace: tvdb
 app:
   image:
     repository: ravelox/tvdb
-    tag: latest
+    tag: "1.0.9"
+    pullPolicy: IfNotPresent
   replicas: 1
+  enableAdminUi: false
+  apiTokenKey: api-token
+  adminUsernameKey: admin-username
+  adminPasswordKey: admin-password
+  existingSecret: ""
+  apiToken: ""
+  adminUsername: ""
+  adminPassword: ""
 storage:
   image:
     repository: mysql
-    tag: "8.0"
-  password: admin
+    tag: "8.0.36"
+  password: ""
+  passwordKey: mysql-root-password
+  existingSecret: ""
   volume:
     hostPath: /vagrant/data/mysql
     storage: 500Mi

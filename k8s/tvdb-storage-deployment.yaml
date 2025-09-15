@@ -16,12 +16,15 @@ spec:
         app: tvdb
     spec:
       containers:
-      - image: mysql:8.0
+      - image: mysql:8.0.36
         imagePullPolicy: IfNotPresent
         name: mysql
         env:
         - name: MYSQL_ROOT_PASSWORD
-          value: admin
+          valueFrom:
+            secretKeyRef:
+              name: tvdb-db-credentials
+              key: mysql-root-password
         ports:
         - containerPort: 3306
         readinessProbe:

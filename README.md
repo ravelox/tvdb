@@ -18,11 +18,27 @@ npm start
 curl -s http://localhost:3000/health | jq .
 ```
 
+### Environment configuration
+
+The API exposes a few optional environment variables for authentication and background job retention:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `API_TOKEN` | _unset_ | When set, all JSON/GraphQL endpoints require the token via the `x-api-token` header or a `Bearer` authorization header. |
+| `ENABLE_ADMIN_UI` | `true` in non-production, `false` otherwise | Controls whether the `/admin` console is served. |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | _unset_ | If both are provided, `/admin` is protected with HTTP Basic Auth. |
+| `JOB_TTL_MS` | `600000` | Time (ms) before completed/failed job results expire. Set to `0` to retain indefinitely. |
+| `MAX_JOB_HISTORY` | `100` | Maximum number of job records kept in memory before the oldest entries are evicted. |
+
+See `.env.example` for a compose-ready set of defaults.
+
 ### Docker multi-arch build
 ```bash
 npm run docker:build
+# publish multi-arch images
+npm run docker:build -- --push
 ```
-Builds and pushes images for x86_64, arm64, and armv7 using `docker buildx`.
+By default the helper script builds an x86_64 image locally (loaded into your Docker daemon). Pass `--push` to publish the multi-architecture image set.
 
 ### Helm deployment
 Render the manifests without installing:
@@ -56,6 +72,8 @@ kubectl label pv tvdb-storage-pv app.kubernetes.io/managed-by=Helm --overwrite
 kubectl annotate pv tvdb-storage-pv meta.helm.sh/release-name=tvdb meta.helm.sh/release-namespace=tvdb --overwrite
 ```
 Use `-f my-values.yaml` or `--set key=value` to customize any of the values.
+
+> **Secrets:** The chart expects either an existing Kubernetes secret (see `storage.existingSecret` / `app.existingSecret`) or plain values for `storage.password` and optional admin credentials. Sample manifests for manual deployments live under `k8s/` (e.g. `k8s/tvdb-secrets.yaml.example`).
 
 ### OpenAPI & Docs
 - JSON spec: `GET /openapi.json` (also `/spec` and `/.well-known/openapi.json`)

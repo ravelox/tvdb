@@ -15,13 +15,19 @@ spec:
       labels:
         app: tvdb
     spec:
+{{- if and (not .Values.storage.existingSecret) (not .Values.storage.password) }}
+      {{- fail "Either storage.password or storage.existingSecret must be provided" }}
+{{- end }}
       containers:
       - image: {{ .Values.storage.image.repository }}:{{ .Values.storage.image.tag }}
         imagePullPolicy: IfNotPresent
         name: mysql
         env:
         - name: MYSQL_ROOT_PASSWORD
-          value: {{ .Values.storage.password | quote }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tvdb.storageSecretName" . }}
+              key: {{ .Values.storage.passwordKey }}
         ports:
         - containerPort: 3306
         readinessProbe:

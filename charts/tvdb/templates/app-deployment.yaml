@@ -17,12 +17,12 @@ spec:
     spec:
       initContainers:
       - name: wait-for-storage
-        image: busybox:1.28
+        image: busybox:1.36.1
         command: ['sh', '-c', 'until nc -zv tvdb-database 3306; do echo waiting for database; sleep 2; done']
       containers:
       - name: tvdb-app
         image: {{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}
-        imagePullPolicy: Always
+        imagePullPolicy: {{ .Values.app.image.pullPolicy }}
         ports:
         - containerPort: 3000
         env:
@@ -35,6 +35,33 @@ spec:
         - name: DB_USER
           value: root
         - name: DB_PASSWORD
-          value: {{ .Values.storage.password | quote }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tvdb.storageSecretName" . }}
+              key: {{ .Values.storage.passwordKey }}
         - name: DB_NAME
           value: tvdb
+        {{- if or .Values.app.apiToken .Values.app.existingSecret }}
+        - name: API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tvdb.appSecretName" . }}
+              key: {{ .Values.app.apiTokenKey }}
+              optional: true
+        {{- end }}
+        - name: ENABLE_ADMIN_UI
+          value: "{{ .Values.app.enableAdminUi }}"
+        {{- if or .Values.app.adminUsername .Values.app.adminPassword .Values.app.existingSecret }}
+        - name: ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tvdb.appSecretName" . }}
+              key: {{ .Values.app.adminUsernameKey }}
+              optional: true
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tvdb.appSecretName" . }}
+              key: {{ .Values.app.adminPasswordKey }}
+              optional: true
+        {{- end }}
