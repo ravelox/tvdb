@@ -13,7 +13,7 @@ spec:
   capacity:
     storage: {{ .Values.storage.volume.storage }}
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
     path: {{ .Values.storage.volume.hostPath | quote }}
@@ -28,7 +28,7 @@ metadata:
     app: tvdb
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   storageClassName: manual
   resources:
     requests:

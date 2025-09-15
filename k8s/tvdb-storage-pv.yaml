@@ -8,8 +8,8 @@ spec:
   capacity:
     storage: 500Mi
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-#  hostPath:
-#    path: /var/lib/tvdb
-#    type: DirectoryOrCreate
+  # hostPath:
+  #   path: /var/lib/tvdb
+  #   type: DirectoryOrCreate
