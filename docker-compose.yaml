@@ -1,9 +1,9 @@
 services:
   db:
-    image: mysql:latest
+    image: mysql:8.0.36
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
     volumes:
       - mysql-data:/var/lib/mysql
     ports:
@@ -15,18 +15,23 @@ services:
       retries: 20
       start_period: 30s
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
+    image: phpmyadmin/phpmyadmin:5.2.1
     restart: always
     depends_on:
       db:
         condition: service_healthy
     environment:
       PMA_HOST: db
-      MYSQL_ROOT_PASSWORD: admin
+      PMA_USER: ${MYSQL_ROOT_USER:-root}
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
     ports:
       - "6888:80"
   tvdb:
-    image: ravelox/tvdb:latest
+    image: ${TVDB_IMAGE:-ravelox/tvdb:1.0.9}
+    build:
+      context: .
+      args:
+        NODE_VERSION: ${NODE_VERSION:-20.12.2-slim}
     restart: always
     depends_on:
       db:
@@ -37,8 +42,12 @@ services:
       PORT: 3000
       DB_HOST: db
       DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: admin
-      DB_NAME: tvdb
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      DB_NAME: ${DB_NAME:-tvdb}
+      API_TOKEN: ${API_TOKEN:-}
+      ENABLE_ADMIN_UI: ${ENABLE_ADMIN_UI:-true}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
 volumes:
   mysql-data:
