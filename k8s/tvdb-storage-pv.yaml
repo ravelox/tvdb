@@ -10,6 +10,6 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  hostPath:
-    path: /var/lib/tvdb
-    type: DirectoryOrCreate
+#  hostPath:
+#    path: /var/lib/tvdb
+#    type: DirectoryOrCreate
