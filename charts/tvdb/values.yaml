@@ -2,7 +2,7 @@ namespace: tvdb
 app:
   image:
     repository: ravelox/tvdb
-    tag: "1.0.9"
+    tag: "1.0.10"
     pullPolicy: IfNotPresent
   replicas: 1
   enableAdminUi: false

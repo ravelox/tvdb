@@ -27,7 +27,7 @@ services:
     ports:
       - "6888:80"
   tvdb:
-    image: ${TVDB_IMAGE:-ravelox/tvdb:1.0.9}
+    image: ${TVDB_IMAGE:-ravelox/tvdb:1.0.10}
     build:
       context: .
       args:
