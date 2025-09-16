@@ -18,6 +18,13 @@ spec:
 {{- if and (not .Values.storage.existingSecret) (not .Values.storage.password) }}
       {{- fail "Either storage.password or storage.existingSecret must be provided" }}
 {{- end }}
+      initContainers:
+        - name: remove-lostfound
+          image: busybox
+          command: ["rm", "-rf", "/var/lib/mysql/lost+found"]
+          volumeMounts:
+            - name: tvdb-storage-volume
+              mountPath: /var/lib/mysql
       containers:
       - image: {{ .Values.storage.image.repository }}:{{ .Values.storage.image.tag }}
         imagePullPolicy: IfNotPresent

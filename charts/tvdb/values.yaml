@@ -11,13 +11,13 @@ app:
   adminPasswordKey: admin-password
   existingSecret: ""
   apiToken: ""
-  adminUsername: ""
-  adminPassword: ""
+  adminUsername: "admin"
+  adminPassword: "admin"
 storage:
   image:
     repository: mysql
     tag: "8.0.36"
-  password: ""
+  password: "admin"
   passwordKey: mysql-root-password
   existingSecret: ""
   volume:
