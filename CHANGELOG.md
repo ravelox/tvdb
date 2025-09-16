@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.10] - 2025-09-16
+### Changed
+- Bumped package, OpenAPI spec, Postman collection, Docker, Helm chart, and Kubernetes deployment versions to 1.0.10.
+
 ## [1.0.9] - 2025-09-13
 ### Changed
 - Bumped package, Postman collection, and spec versions to 1.0.9.

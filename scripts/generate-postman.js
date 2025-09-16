@@ -3,8 +3,8 @@ const path = require('path');
 
 const specPath = path.resolve(__dirname, '..', 'openapi.json');
 const spec = JSON.parse(fs.readFileSync(specPath, 'utf8'));
-const baseUrl = (spec.servers && spec.servers[0] && spec.servers[0].url) || '';
-const url = new URL(baseUrl || 'http://localhost');
+const defaultServerUrl = (spec.servers && spec.servers[0] && spec.servers[0].url) || 'http://localhost:3000';
+const baseUrl = defaultServerUrl.replace(/\/+$/, '');
 
 const collection = {
   info: {
@@ -13,7 +13,15 @@ const collection = {
     version: spec.info && spec.info.version ? spec.info.version : '1.0.0',
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
   },
-  item: []
+  item: [],
+  variable: [
+    {
+      key: 'baseUrl',
+      value: baseUrl,
+      type: 'string',
+      description: 'Base URL for the TVDB API.'
+    }
+  ]
 };
 
 // Group items by first tag
@@ -26,17 +34,13 @@ for (const [route, methods] of Object.entries(spec.paths || {})) {
       folders[tag] = { name: tag, item: [] };
       collection.item.push(folders[tag]);
     }
+    const routePath = route.startsWith('/') ? route : `/${route}`;
+    const rawUrl = `{{baseUrl}}${routePath}`;
     const item = {
       name: `${method.toUpperCase()} ${route}`,
       request: {
         method: method.toUpperCase(),
-        url: {
-          raw: baseUrl + route,
-          protocol: url.protocol.replace(':', ''),
-          host: url.hostname.split('.'),
-          port: url.port || undefined,
-          path: route.split('/').filter(Boolean)
-        },
+        url: rawUrl,
         description: op.summary || ''
       }
     };
