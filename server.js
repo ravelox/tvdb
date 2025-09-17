@@ -29,11 +29,8 @@ const { parseGraphQLQuery } = require('./lib/graphqlParser');
 require('dotenv').config();
 const pkg = require('./package.json');
 
-// Prepend version number to all log lines
 const originalLog = console.log;
-console.log = (...args) => originalLog(`[${pkg.version}]`, ...args);
 const originalError = console.error;
-console.error = (...args) => originalError(`[${pkg.version}]`, ...args);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const DB_HOST = process.env.DB_HOST || 'localhost';
@@ -43,6 +40,10 @@ const DB_PASSWORD = process.env.DB_PASSWORD || '';
 const DB_NAME = process.env.DB_NAME || 'tvdb';
 const APP_VERSION = process.env.APP_VERSION || pkg.version;
 const BUILD_NUMBER = process.env.BUILD_NUMBER ?? null;
+// Prepend version/build tag to all log lines
+const logVersionTag = BUILD_NUMBER != null ? `${APP_VERSION}-build.${BUILD_NUMBER}` : APP_VERSION;
+console.log = (...args) => originalLog(`[${logVersionTag}]`, ...args);
+console.error = (...args) => originalError(`[${logVersionTag}]`, ...args);
 const ENABLE_ADMIN_UI = process.env.ENABLE_ADMIN_UI != null
   ? process.env.ENABLE_ADMIN_UI === 'true'
   : process.env.NODE_ENV !== 'production';
