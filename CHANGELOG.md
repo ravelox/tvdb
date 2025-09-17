@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2025-09-22
+### Changed
+- Adopted a semantic version baseline of 1.1.0 across the package, specs, and deployment assets.
+- Added automated build numbering to the Docker helper and image metadata so each rebuild gets a unique tag.
+
 ## [1.0.11] - 2025-09-20
 ### Added
 - Documented API uninstall/cleanup steps in the README.
