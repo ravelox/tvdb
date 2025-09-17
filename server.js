@@ -41,6 +41,8 @@ const DB_PORT = process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306;
 const DB_USER = process.env.DB_USER || 'root';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
 const DB_NAME = process.env.DB_NAME || 'tvdb';
+const APP_VERSION = process.env.APP_VERSION || pkg.version;
+const BUILD_NUMBER = process.env.BUILD_NUMBER ?? null;
 const ENABLE_ADMIN_UI = process.env.ENABLE_ADMIN_UI != null
   ? process.env.ENABLE_ADMIN_UI === 'true'
   : process.env.NODE_ENV !== 'production';
@@ -217,6 +219,7 @@ const openapiBase = {
   },
   paths: {
     '/health': { get: { tags:['health'], summary:'Service/DB health', responses:{ '200':{ description:'OK' } } } },
+    '/deployment-version': { get: { tags:['health'], summary:'Get app deployment version', responses:{ '200':{ description:'Deployment version' } } } },
     '/init': { post: { tags:['health'], summary:'Initialize DB/schema', responses:{ '200':{ description:'Initialized' } } } },
 
     '/actors': { get:{ tags:['actors'], summary:'List actors' }, post:{ tags:['actors'], summary:'Create actor' } },
@@ -269,9 +272,9 @@ const dateRangeParams = [
   { name:'end', in:'query', required:false, schema:{ type:'string', format:'date-time' }, description:'Filter results with created_at <= end (default limitless)' }
 ];
 const includeParam = { name:'include', in:'query', required:false, schema:{ type:'string' }, description:'Comma separated list of sub-resources to include, e.g. episodes,episodes.characters' };
-for (const ops of Object.values(openapiBase.paths)) {
+for (const [path, ops] of Object.entries(openapiBase.paths)) {
   for (const [method, op] of Object.entries(ops)) {
-    if (method === 'get') {
+    if (method === 'get' && path !== '/deployment-version') {
       op.parameters = [...(op.parameters || []), ...dateRangeParams, includeParam];
     }
   }
@@ -304,6 +307,14 @@ app.get('/health', asyncH(async (req, res) => {
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
+}));
+
+app.get('/deployment-version', asyncH(async (_req, res) => {
+  res.json({
+    appVersion: APP_VERSION,
+    buildNumber: BUILD_NUMBER,
+    packageVersion: pkg.version
+  });
 }));
 
 app.post('/init', asyncH(async (_req, res) => {

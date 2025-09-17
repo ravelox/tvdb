@@ -194,6 +194,19 @@
         ]
       }
     },
+    "/deployment-version": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Get app deployment version",
+        "responses": {
+          "200": {
+            "description": "Deployment version"
+          }
+        }
+      }
+    },
     "/init": {
       "post": {
         "tags": [
