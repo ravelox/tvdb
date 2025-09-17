@@ -24,6 +24,31 @@ definitions:
     type: HttpRequester
     url_base: "{{ config['api_url'] }}"
   streams:
+    actors:
+      type: DeclarativeStream
+      name: actors
+      primary_key: id
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: "#/definitions/base_requester"
+          path: /actors
+          http_method: GET
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $schema: http://json-schema.org/draft-07/schema#
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
     shows:
       type: DeclarativeStream
       name: shows
@@ -52,10 +77,7 @@ definitions:
             description:
               type: string
             year:
-              type: integer
-          required:
-            - id
-            - title
+              type: [integer, "null"]
     seasons:
       type: DeclarativeStream
       name: seasons
@@ -64,13 +86,21 @@ definitions:
         type: SimpleRetriever
         requester:
           $ref: "#/definitions/base_requester"
-          path: /seasons
+          path: /shows/{{ stream_slice.show_id }}/seasons
           http_method: GET
         record_selector:
           type: RecordSelector
           extractor:
             type: DpathExtractor
             field_path: []
+      partition_router:
+        - type: SubstreamPartitionRouter
+          parent_stream_configs:
+            - type: ParentStreamConfig
+              stream:
+                $ref: "#/definitions/streams/shows"
+              parent_key: id
+              partition_field: show_id
       schema_loader:
         type: InlineSchemaLoader
         schema:
@@ -84,11 +114,7 @@ definitions:
             season_number:
               type: integer
             year:
-              type: integer
-          required:
-            - id
-            - show_id
-            - season_number
+              type: [integer, "null"]
     episodes:
       type: DeclarativeStream
       name: episodes
@@ -97,13 +123,21 @@ definitions:
         type: SimpleRetriever
         requester:
           $ref: "#/definitions/base_requester"
-          path: /episodes
+          path: /shows/{{ stream_slice.show_id }}/episodes
           http_method: GET
         record_selector:
           type: RecordSelector
           extractor:
             type: DpathExtractor
             field_path: []
+      partition_router:
+        - type: SubstreamPartitionRouter
+          parent_stream_configs:
+            - type: ParentStreamConfig
+              stream:
+                $ref: "#/definitions/streams/shows"
+              parent_key: id
+              partition_field: show_id
       schema_loader:
         type: InlineSchemaLoader
         schema:
@@ -119,17 +153,51 @@ definitions:
             title:
               type: string
             description:
-              type: string
+              type: [string, "null"]
             air_date:
-              type: string
+              type: [string, "null"]
               format: date
-          required:
-            - id
-            - show_id
-            - season_id
-            - title
+    characters:
+      type: DeclarativeStream
+      name: characters
+      primary_key: id
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: "#/definitions/base_requester"
+          path: /shows/{{ stream_slice.show_id }}/characters
+          http_method: GET
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path: []
+      partition_router:
+        - type: SubstreamPartitionRouter
+          parent_stream_configs:
+            - type: ParentStreamConfig
+              stream:
+                $ref: "#/definitions/streams/shows"
+              parent_key: id
+              partition_field: show_id
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $schema: http://json-schema.org/draft-07/schema#
+          type: object
+          properties:
+            id:
+              type: integer
+            show_id:
+              type: integer
+            name:
+              type: string
+            actor_id:
+              type: [integer, "null"]
 
 streams:
+  - $ref: "#/definitions/streams/actors"
   - $ref: "#/definitions/streams/shows"
   - $ref: "#/definitions/streams/seasons"
   - $ref: "#/definitions/streams/episodes"
+  - $ref: "#/definitions/streams/characters"
