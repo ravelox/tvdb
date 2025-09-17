@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-platforms="linux/amd64"
+platforms="linux/arm/v7,linux/arm64,linux/amd64"
 builder="tvdb-multiarch"
 node_version="20.12.2-slim"
 push_image=false
