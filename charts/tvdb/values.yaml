@@ -3,7 +3,7 @@ app:
   image:
     repository: ravelox/tvdb
     tag: "latest"
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   replicas: 1
   enableAdminUi: false
   apiTokenKey: api-token
