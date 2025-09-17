@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.11] - 2025-09-20
+### Added
+- Documented API uninstall/cleanup steps in the README.
+### Changed
+- Bumped package, OpenAPI spec, Postman collection, Docker, Helm chart, and Kubernetes deployment versions to 1.0.11.
+
 ## [1.0.10] - 2025-09-16
 ### Changed
 - Bumped package, OpenAPI spec, Postman collection, Docker, Helm chart, and Kubernetes deployment versions to 1.0.10.

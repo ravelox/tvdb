@@ -32,6 +32,14 @@ The API exposes a few optional environment variables for authentication and back
 
 See `.env.example` for a compose-ready set of defaults.
 
+### Uninstall / Cleanup
+
+When you're done experimenting you can tear everything down:
+
+- **Local Node.js install:** stop `npm start` (Ctrl+C), delete the install artifacts with `rm -rf node_modules package-lock.json`, and drop the schema the API created by connecting to MySQL and running `DROP DATABASE <your DB_NAME>;` (the default is `tvdb`).
+- **Docker Compose:** run `docker compose down -v` to stop the stack and remove the bind-mounted database volume.
+- **Helm release:** run `helm uninstall tvdb -n tvdb` (or your namespace) and, if you created persistent volumes, clean them up with `kubectl delete pvc -n <namespace> -l app=tvdb`.
+
 ### Docker multi-arch build
 ```bash
 npm run docker:build
