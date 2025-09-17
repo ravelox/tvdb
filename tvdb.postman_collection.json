@@ -18,6 +18,14 @@
           }
         },
         {
+          "name": "GET /deployment-version",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/deployment-version",
+            "description": "Get app deployment version"
+          }
+        },
+        {
           "name": "POST /init",
           "request": {
             "method": "POST",

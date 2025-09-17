@@ -2,6 +2,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
+const pkg = require('../package.json');
 
 let serverProcess;
 
@@ -9,7 +10,7 @@ before(async () => {
   const mockPath = path.resolve(__dirname, 'mock-db.js');
   serverProcess = spawn('node', ['-r', mockPath, 'server.js'], {
     cwd: __dirname + '/..',
-    env: { ...process.env, PORT: '3000' },
+    env: { ...process.env, PORT: '3000', APP_VERSION: 'test-1.2.3', BUILD_NUMBER: '42' },
     stdio: ['ignore', 'pipe', 'pipe']
   });
 
@@ -107,4 +108,15 @@ for (const ep of endpoints) {
     }
   });
 }
+
+test('GET /deployment-version returns deployment metadata', async () => {
+  const res = await fetch('http://localhost:3000/deployment-version');
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.deepStrictEqual(body, {
+    appVersion: 'test-1.2.3',
+    buildNumber: '42',
+    packageVersion: pkg.version
+  });
+});
 
