@@ -41,7 +41,7 @@ const DB_NAME = process.env.DB_NAME || 'tvdb';
 const APP_VERSION = process.env.APP_VERSION || pkg.version;
 const BUILD_NUMBER = process.env.BUILD_NUMBER ?? null;
 // Prepend version/build tag to all log lines
-const logVersionTag = BUILD_NUMBER != null ? `${APP_VERSION}-build.${BUILD_NUMBER}` : APP_VERSION;
+const logVersionTag = BUILD_NUMBER != null ? `${APP_VERSION}.${BUILD_NUMBER}` : APP_VERSION;
 console.log = (...args) => originalLog(`[${logVersionTag}]`, ...args);
 console.error = (...args) => originalError(`[${logVersionTag}]`, ...args);
 const ENABLE_ADMIN_UI = process.env.ENABLE_ADMIN_UI != null

@@ -73,7 +73,7 @@ fi
 
 printf '%s\n' "$next_build_number" >"$build_number_file"
 
-full_version="${app_version}-build.${next_build_number}"
+full_version="${app_version}.${next_build_number}"
 
 echo "Building ravelox/tvdb:${full_version} (base ${app_version}, build #${next_build_number})"
 
