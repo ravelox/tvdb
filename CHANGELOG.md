@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2025-09-23
+### Added
+- POST `/admin/reset-database` endpoint to drop and reinitialize the schema via the API.
+- API smoke test coverage for the admin reset workflow.
+
+### Changed
+- `reset_database.sh` now calls the admin API instead of executing SQL locally.
+- README, OpenAPI spec, Postman collection, Docker, Helm, and Kubernetes defaults bumped to 1.2.0.
+
 ## [1.1.0] - 2025-09-22
 ### Changed
 - Adopted a semantic version baseline of 1.1.0 across the package, specs, and deployment assets.

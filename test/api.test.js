@@ -38,6 +38,7 @@ after(() => {
 const endpoints = [
   { method: 'GET', path: '/health' },
   { method: 'POST', path: '/init' },
+  { method: 'POST', path: '/admin/reset-database' },
   { method: 'POST', path: '/actors', body: { name: 'Tester' }, expect: 201 },
   { method: 'GET', path: '/actors' },
   { method: 'GET', path: '/actors/1', expect: 404 },

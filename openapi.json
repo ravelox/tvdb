@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "TV Shows API",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs."
   },
   "servers": [
@@ -34,6 +34,9 @@
     },
     {
       "name": "jobs"
+    },
+    {
+      "name": "admin"
     }
   ],
   "components": {
@@ -216,6 +219,19 @@
         "responses": {
           "200": {
             "description": "Initialized"
+          }
+        }
+      }
+    },
+    "/admin/reset-database": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Reset database schema via API",
+        "responses": {
+          "200": {
+            "description": "Reset"
           }
         }
       }

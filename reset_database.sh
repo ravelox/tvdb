@@ -11,23 +11,19 @@ if [[ -f "$REPO_DIR/.env" ]]; then
   set +a
 fi
 
-DB_HOST=${DB_HOST:-localhost}
-DB_PORT=${DB_PORT:-3306}
-DB_USER=${DB_USER:-root}
-DB_PASSWORD=${DB_PASSWORD:-}
-DB_NAME=${DB_NAME:-tvdb}
-SCHEMA_PATH=${SCHEMA_PATH:-"$REPO_DIR/schema.sql"}
-MYSQL_BIN=${MYSQL_BIN:-mysql}
+PORT=${PORT:-3000}
+API_BASE_URL=${API_BASE_URL:-"http://localhost:${PORT}"}
+CURL_BIN=${CURL_BIN:-curl}
+API_TOKEN=${API_TOKEN:-}
 FORCE=false
 
 usage() {
   cat <<USAGE
 Usage: $0 [--force]
 
-Drops and recreates the "$DB_NAME" database, then reloads schema.sql so the
-API starts from a clean slate. Connection settings default to the same
-environment variables server.js consumes (DB_HOST, DB_PORT, DB_USER,
-DB_PASSWORD, DB_NAME) and fall back to localhost/root/tvdb when not set.
+Resets the database by calling the POST /admin/reset-database API endpoint.
+The request targets $API_BASE_URL (default http://localhost:${PORT}) and
+includes the x-api-token header when $API_TOKEN is set.
 
 Options:
   --force, -f   Skip the confirmation prompt.
@@ -53,18 +49,20 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-if [[ ! -f "$SCHEMA_PATH" ]]; then
-  echo "Schema file not found at $SCHEMA_PATH" >&2
+if ! command -v "$CURL_BIN" >/dev/null 2>&1; then
+  echo "The curl client is required but was not found in PATH" >&2
   exit 1
 fi
 
-if ! command -v "$MYSQL_BIN" >/dev/null 2>&1; then
-  echo "The mysql client is required but was not found in PATH" >&2
-  exit 1
+TARGET_URL="${API_BASE_URL%/}/admin/reset-database"
+
+echo "Ready to reset the database via $TARGET_URL"
+if [[ -z "$API_TOKEN" ]]; then
+  echo "Warning: API_TOKEN is unset; the request will be unauthenticated" >&2
 fi
 
 if ! $FORCE; then
-  echo "This will ERASE all data in database '$DB_NAME' on $DB_HOST:$DB_PORT."
+  echo "This will ERASE all data exposed by the API at $TARGET_URL."
   read -rp "Type 'yes' to continue: " confirm
   if [[ "$confirm" != "yes" ]]; then
     echo "Aborted."
@@ -72,33 +70,24 @@ if ! $FORCE; then
   fi
 fi
 
-mysql_args=(--host "$DB_HOST" --port "$DB_PORT" --user "$DB_USER" --protocol tcp)
-
-run_mysql() {
-  if [[ -n "$DB_PASSWORD" ]]; then
-    MYSQL_PWD="$DB_PASSWORD" "$MYSQL_BIN" "${mysql_args[@]}" "$@"
-  else
-    "$MYSQL_BIN" "${mysql_args[@]}" "$@"
-  fi
-}
-
-echo "Verifying MySQL connectivity..."
-run_mysql --execute 'SELECT 1' >/dev/null
-
-echo "Dropping database '$DB_NAME' (if it exists)..."
-escaped_db_name=$(printf '%s' "$DB_NAME" | sed 's/`/``/g')
-drop_sql=$(printf 'DROP DATABASE IF EXISTS `%s`;' "$escaped_db_name")
-run_mysql --execute "$drop_sql"
-
-echo "Recreating database '$DB_NAME'..."
-create_sql=$(printf 'CREATE DATABASE `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;' "$escaped_db_name")
-run_mysql --execute "$create_sql"
-
-echo "Reapplying schema from $SCHEMA_PATH..."
-if [[ -n "$DB_PASSWORD" ]]; then
-  MYSQL_PWD="$DB_PASSWORD" "$MYSQL_BIN" "${mysql_args[@]}" --database "$DB_NAME" <"$SCHEMA_PATH"
-else
-  "$MYSQL_BIN" "${mysql_args[@]}" --database "$DB_NAME" <"$SCHEMA_PATH"
+curl_args=("$CURL_BIN" --fail --silent --show-error -X POST "$TARGET_URL")
+if [[ -n "$API_TOKEN" ]]; then
+  curl_args+=(--header "x-api-token: $API_TOKEN")
 fi
 
-echo "Database reset complete. You can now reseed the API."
+echo "Invoking API reset..."
+set +e
+response="$(${curl_args[@]} 2>&1)"
+status=$?
+set -e
+if [[ $status -ne 0 ]]; then
+  echo "$response" >&2
+  echo "Database reset failed" >&2
+  exit $status
+fi
+
+if [[ -n "$response" ]]; then
+  echo "$response"
+fi
+
+echo "Database reset complete via API."
