@@ -3,19 +3,23 @@ set -euo pipefail
 
 API="${API:-http://localhost:3000}"
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=scripts/seed_common.sh
+source "$SCRIPT_DIR/scripts/seed_common.sh"
+
 if ! command -v jq >/dev/null 2>&1; then
   echo "jq is required"; exit 1
 fi
 
 json() { jq -c -n "$1"; }
 
-curl -s -o /dev/null -w "%{http_code}\n" -X POST "$API/init" | grep -qE '^(200|201|204)$' && echo "[init] Database ensured" || echo "[init] Skipped or not supported"
+seed_init_database
 
-SHOW_ID=$(curl -s "$API/shows" | jq -r '
+SHOW_ID=$(seed_api_get "$API/shows" | jq -r '
   map(select(.title=="The Expanse" and .year==2015)) | (.[0].id // empty)
 ')
 if [ -z "${SHOW_ID:-}" ]; then
-  SHOW_ID=$(curl -s -X POST "$API/shows" -H 'Content-Type: application/json' -d "$(json '{title:"The Expanse", description:"American science fiction series", year:2015}')" | jq -r '.id')
+  SHOW_ID=$(seed_api_post "$API/shows" -H 'Content-Type: application/json' -d "$(json '{title:"The Expanse", description:"American science fiction series", year:2015}')" | jq -r '.id')
   echo "Created show: The Expanse (id=$SHOW_ID)"
 else
   echo "Using existing show: The Expanse (id=$SHOW_ID)"
@@ -30,14 +34,14 @@ read -r -d '' SEASONS <<'EOF2' || true
 6|2021
 EOF2
 
-existing_seasons=$(curl -s "$API/shows/$SHOW_ID/seasons")
+existing_seasons=$(seed_api_get "$API/shows/$SHOW_ID/seasons")
 printf '%s\n' "$SEASONS" | while IFS='|' read -r s y; do
   [ -z "$s" ] && continue
   if echo "$existing_seasons" | jq -e --argjson s "$s" 'map(.season_number)|index($s)' >/dev/null; then
     echo "Season $s already exists"
   else
     echo "Creating Season $s (year $y)"
-    curl -s -X POST "$API/shows/$SHOW_ID/seasons" -H 'Content-Type: application/json' -d "$(jq -nc --argjson s "$s" --argjson y "$y" '{season_number:$s, year:$y}')" >/dev/null
+    seed_api_post "$API/shows/$SHOW_ID/seasons" -H 'Content-Type: application/json' -d "$(jq -nc --argjson s "$s" --argjson y "$y" '{season_number:$s, year:$y}')" >/dev/null
   fi
 done
 
@@ -48,17 +52,17 @@ Cas Anvar
 Wes Chatham
 EOF2
 
-actors_json=$(curl -s "$API/actors")
+actors_json=$(seed_api_get "$API/actors")
 printf '%s\n' "$ACTORS" | while IFS= read -r name; do
   [ -z "$name" ] && continue
   if echo "$actors_json" | jq -e --arg n "$name" 'map(.name)|index($n)' >/dev/null; then
     echo "Actor exists: $name"
   else
     echo "Creating actor: $name"
-    curl -s -X POST "$API/actors" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$name" '{name:$n}')" >/dev/null
+    seed_api_post "$API/actors" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$name" '{name:$n}')" >/dev/null
   fi
 done
-actors_json=$(curl -s "$API/actors")
+actors_json=$(seed_api_get "$API/actors")
 
 read -r -d '' CHAR_TO_ACTOR <<'EOF2' || true
 James Holden|Steven Strait
@@ -67,14 +71,14 @@ Alex Kamal|Cas Anvar
 Amos Burton|Wes Chatham
 EOF2
 
-chars_json=$(curl -s "$API/shows/$SHOW_ID/characters")
+chars_json=$(seed_api_get "$API/shows/$SHOW_ID/characters")
 printf '%s\n' "$CHAR_TO_ACTOR" | while IFS='|' read -r char actor; do
   [ -z "$char" ] && continue
   if echo "$chars_json" | jq -e --arg n "$char" 'map(.name)|index($n)' >/dev/null; then
     echo "Character exists: $char"
   else
     echo "Creating character: $char (actor: $actor)"
-    curl -s -X POST "$API/shows/$SHOW_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$char" --arg a "$actor" '{name:$n, actor_name:$a}')" >/dev/null
+    seed_api_post "$API/shows/$SHOW_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$char" --arg a "$actor" '{name:$n, actor_name:$a}')" >/dev/null
   fi
 done
 
@@ -112,16 +116,16 @@ read -r -d '' EPISODES <<'EOF2' || true
 6|2022-01-07|Why We Fight|The inner planets unite for war.
 EOF2
 
-existing_eps=$(curl -s "$API/shows/$SHOW_ID/episodes")
+existing_eps=$(seed_api_get "$API/shows/$SHOW_ID/episodes")
 printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title description; do
   [ -z "$season" ] && continue
   if echo "$existing_eps" | jq -e --arg t "$title" --argjson s "$season" 'map(select(.season_number==$s and .title==$t))|length>0' >/dev/null; then
     echo "Episode exists (S${season}): $title"
   else
     echo "Creating episode (S${season}): $title"
-    jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description" '{season_number:$season, air_date:$date, title:$t, description:$d}' | curl -s -X POST "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
+    jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description" '{season_number:$season, air_date:$date, title:$t, description:$d}' | seed_api_post "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
   fi
-  EP_ID=$(curl -s "$API/shows/$SHOW_ID/episodes" | jq -r --arg t "$title" --argjson s "$season" 'map(select(.season_number==$s and .title==$t)) | (.[0].id // empty)')
+  EP_ID=$(seed_api_get "$API/shows/$SHOW_ID/episodes" | jq -r --arg t "$title" --argjson s "$season" 'map(select(.season_number==$s and .title==$t)) | (.[0].id // empty)')
   [ -z "$EP_ID" ] && { echo "Could not resolve episode id for season $season"; continue; }
 
   case "$season" in
@@ -131,7 +135,7 @@ printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title descript
   echo "$CHARS" | tr '|' '\n' | while IFS= read -r char; do
     [ -z "$char" ] && continue
     echo "  Linking $char"
-    curl -s -X POST "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$char" '{character_name:$n}')" >/dev/null
+    seed_api_post "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$char" '{character_name:$n}')" >/dev/null
   done
 done
 
