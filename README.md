@@ -96,6 +96,14 @@ chmod +x seed_doctor_who.sh
 ```
 Seeds seasons 1–26, a subset of actors & characters, one opener episode per season, **and links characters** to each opener.
 
+### Reset the database
+```bash
+./reset_database.sh       # prompts before dropping data
+./reset_database.sh --force  # skip the confirmation prompt
+```
+Uses the same MySQL environment variables as `server.js` (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`).
+The script drops and recreates the schema defined in `schema.sql`, so reseed scripts start from an empty database.
+
 ---
 
 ## Comprehensive cURL Test Cookbook
