@@ -27,12 +27,12 @@ services:
     ports:
       - "6888:80"
   tvdb:
-    image: ${TVDB_IMAGE:-ravelox/tvdb:1.1.0}
+    image: ${TVDB_IMAGE:-ravelox/tvdb:1.2.0}
     build:
       context: .
       args:
         NODE_VERSION: ${NODE_VERSION:-20.12.2-slim}
-        APP_VERSION: ${APP_VERSION:-1.1.0}
+        APP_VERSION: ${APP_VERSION:-1.2.0}
         BUILD_NUMBER: ${BUILD_NUMBER:-0}
     restart: always
     depends_on:

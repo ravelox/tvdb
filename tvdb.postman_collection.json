@@ -2,7 +2,7 @@
   "info": {
     "name": "TV Shows API",
     "description": "CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs.",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -31,6 +31,19 @@
             "method": "POST",
             "url": "{{baseUrl}}/init",
             "description": "Initialize DB/schema"
+          }
+        }
+      ]
+    },
+    {
+      "name": "admin",
+      "item": [
+        {
+          "name": "POST /admin/reset-database",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/reset-database",
+            "description": "Reset database schema via API"
           }
         }
       ]

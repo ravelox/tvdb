@@ -61,6 +61,8 @@ const MAX_JOB_HISTORY = (() => {
   return 100;
 })();
 
+const jobs = new Map();
+
 async function initDatabase() {
   const conn = await mysql.createConnection({
     host: DB_HOST,
@@ -81,6 +83,37 @@ async function initDatabase() {
   } finally {
     await conn.end();
   }
+}
+
+async function resetDatabase() {
+  console.log('[reset] Dropping database before reinitializing');
+  const conn = await mysql.createConnection({
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASSWORD,
+  });
+  try {
+    const escapedName = DB_NAME.replace(/`/g, '``');
+    await conn.query(`DROP DATABASE IF EXISTS \`${escapedName}\``);
+  } finally {
+    await conn.end();
+  }
+  await initDatabase();
+  console.log('[reset] Database dropped and schema reapplied');
+}
+
+function createDbPool() {
+  return mysql.createPool({
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
 }
 
 let pool;
@@ -206,7 +239,8 @@ const openapiBase = {
   servers: [], // populated dynamically per request
   tags: [
     { name: 'health' }, { name: 'actors' }, { name: 'shows' }, { name: 'seasons' },
-    { name: 'episodes' }, { name: 'characters' }, { name: 'links' }, { name: 'jobs' }
+    { name: 'episodes' }, { name: 'characters' }, { name: 'links' }, { name: 'jobs' },
+    { name: 'admin' }
   ],
   components: {
     schemas: {
@@ -222,6 +256,7 @@ const openapiBase = {
     '/health': { get: { tags:['health'], summary:'Service/DB health', responses:{ '200':{ description:'OK' } } } },
     '/deployment-version': { get: { tags:['health'], summary:'Get app deployment version', responses:{ '200':{ description:'Deployment version' } } } },
     '/init': { post: { tags:['health'], summary:'Initialize DB/schema', responses:{ '200':{ description:'Initialized' } } } },
+    '/admin/reset-database': { post: { tags:['admin'], summary:'Reset database schema via API', responses:{ '200':{ description:'Reset' } } } },
 
     '/actors': { get:{ tags:['actors'], summary:'List actors' }, post:{ tags:['actors'], summary:'Create actor' } },
     '/actors/{id}': { get:{ tags:['actors'], summary:'Get actor' }, put:{ tags:['actors'], summary:'Update actor' }, delete:{ tags:['actors'], summary:'Delete actor' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'integer'} }] },
@@ -320,11 +355,21 @@ app.get('/deployment-version', asyncH(async (_req, res) => {
 
 app.post('/init', asyncH(async (_req, res) => {
   await initDatabase();
-  pool = mysql.createPool({
-    host: DB_HOST, port: DB_PORT, user: DB_USER, password: DB_PASSWORD, database: DB_NAME,
-    waitForConnections: true, connectionLimit: 10, queueLimit: 0
-  });
+  pool = createDbPool();
   res.json({ status: 'initialized' });
+}));
+
+app.post('/admin/reset-database', asyncH(async (_req, res) => {
+  if (pool) {
+    try {
+      await pool.end();
+    } catch (err) {
+      console.error('[reset] Failed to close existing pool', err);
+    }
+  }
+  await resetDatabase();
+  pool = createDbPool();
+  res.json({ status: 'reset' });
 }));
 
 // --------------------------- ACTORS ---------------------------
@@ -751,7 +796,6 @@ app.delete('/episodes/:episodeId/characters/:characterId', asyncH(async (req, re
 }));
 
 // --------------------------- JOBS ---------------------------
-const jobs = new Map();
 function nowISO(){ return new Date().toISOString(); }
 
 function refreshJobExpiry(job) {
@@ -1504,10 +1548,7 @@ app.delete('/jobs/:id', asyncH(async (req, res) => {
 (async () => {
   try {
     await initDatabase();
-    pool = mysql.createPool({
-      host: DB_HOST, port: DB_PORT, user: DB_USER, password: DB_PASSWORD, database: DB_NAME,
-      waitForConnections: true, connectionLimit: 10, queueLimit: 0
-    });
+    pool = createDbPool();
     app.listen(PORT, () => { console.log(`API listening on http://localhost:${PORT}`); });
   } catch (err) {
     console.error('Failed to initialize database', err);

@@ -48,7 +48,7 @@ npm run docker:build -- --push
 ```
 By default the helper script builds an x86_64 image locally (loaded into your Docker daemon). Pass `--push` to publish the multi-architecture image set.
 
-Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.1.0`) plus a numeric suffix such as `1.1.0.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
+Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.2.0`) plus a numeric suffix such as `1.2.0.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
 
 ### Helm deployment
 Render the manifests without installing:
@@ -101,8 +101,9 @@ Seeds seasons 1–26, a subset of actors & characters, one opener episode per se
 ./reset_database.sh       # prompts before dropping data
 ./reset_database.sh --force  # skip the confirmation prompt
 ```
-Uses the same MySQL environment variables as `server.js` (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`).
-The script drops and recreates the schema defined in `schema.sql`, so reseed scripts start from an empty database.
+Targets the running API at `$API_BASE_URL` (default `http://localhost:$PORT`) and
+invokes `POST /admin/reset-database` using the optional `$API_TOKEN` header.
+Make sure the server is running so reseed scripts start from an empty database.
 
 ---
 
