@@ -73,10 +73,17 @@
 
   function persistToken(token) {
     state.token = token;
-    if (token) {
-      localStorage.setItem('tvdb_api_token', token);
-    } else {
-      localStorage.removeItem('tvdb_api_token');
+    try {
+      if (token) {
+        localStorage.setItem('tvdb_api_token', token);
+      } else {
+        localStorage.removeItem('tvdb_api_token');
+      }
+    } catch (error) {
+      console.warn('Failed to persist API token to localStorage', error);
+      if (token) {
+        showToast('Connected, but unable to remember the API token in this browser.');
+      }
     }
   }
 
@@ -386,7 +393,12 @@
 
   async function bootstrap() {
     attachEventListeners();
-    const storedToken = localStorage.getItem('tvdb_api_token');
+    let storedToken = null;
+    try {
+      storedToken = localStorage.getItem('tvdb_api_token');
+    } catch (error) {
+      console.warn('Failed to read API token from localStorage', error);
+    }
     if (storedToken) {
       persistToken(storedToken);
       const ok = await loadShows();
