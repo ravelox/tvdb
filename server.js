@@ -118,6 +118,60 @@ function createDbPool() {
 
 let pool;
 
+const RETRIABLE_DB_ERROR_CODES = new Set([
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'PROTOCOL_CONNECTION_LOST',
+  'EPIPE',
+  'ETIMEDOUT',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+]);
+
+async function ensurePool() {
+  if (!pool) {
+    pool = createDbPool();
+  }
+  return pool;
+}
+
+async function closePool() {
+  if (!pool) return;
+  try {
+    await pool.end();
+  } catch (err) {
+    console.error('[db] Failed to close pool', err);
+  } finally {
+    pool = null;
+  }
+}
+
+async function refreshPool() {
+  await closePool();
+  return ensurePool();
+}
+
+async function dbCall(method, sql, params, attempt = 0) {
+  const client = await ensurePool();
+  try {
+    return await client[method](sql, params);
+  } catch (err) {
+    const retriable =
+      (err && (RETRIABLE_DB_ERROR_CODES.has(err.code) || err.fatal === true)) || false;
+    if (retriable && attempt < 2) {
+      console.error(
+        `[db] ${method} failed with ${err.code || err.message}; rebuilding pool (attempt ${attempt + 1})`
+      );
+      await refreshPool();
+      return dbCall(method, sql, params, attempt + 1);
+    }
+    throw err;
+  }
+}
+
+const dbExecute = (sql, params) => dbCall('execute', sql, params);
+const dbQuery = (sql, params) => dbCall('query', sql, params);
+
 const app = express();
 app.use(express.json());
 app.use(morgan('dev', {
@@ -340,7 +394,7 @@ try {
 app.get('/health', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   try {
-    const [rows] = await pool.query('SELECT 1 AS ok');
+    const [rows] = await dbQuery('SELECT 1 AS ok');
     res.json({ ok: true, db: rows[0].ok === 1 });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -357,20 +411,14 @@ app.get('/deployment-version', asyncH(async (_req, res) => {
 
 app.post('/init', asyncH(async (_req, res) => {
   await initDatabase();
-  pool = createDbPool();
+  await refreshPool();
   res.json({ status: 'initialized' });
 }));
 
 app.post('/admin/reset-database', asyncH(async (_req, res) => {
-  if (pool) {
-    try {
-      await pool.end();
-    } catch (err) {
-      console.error('[reset] Failed to close existing pool', err);
-    }
-  }
+  await closePool();
   await resetDatabase();
-  pool = createDbPool();
+  await refreshPool();
   res.json({ status: 'reset' });
 }));
 
@@ -378,23 +426,23 @@ app.post('/admin/reset-database', asyncH(async (_req, res) => {
 app.post('/actors', asyncH(async (req, res) => {
   const { name } = req.body;
   if (!name) return httpError(res, 400, 'name is required');
-  const [result] = await pool.execute(
+  const [result] = await dbExecute(
     'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
     [name]
   );
-  const [rows] = await pool.execute('SELECT * FROM actors WHERE id = ?', [result.insertId]);
+  const [rows] = await dbExecute('SELECT * FROM actors WHERE id = ?', [result.insertId]);
   res.status(201).json(rows[0]);
 }));
 
 app.get('/actors', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await pool.execute('SELECT * FROM actors WHERE created_at BETWEEN ? AND ? ORDER BY name', [range.startSql, range.endSql]);
+  const [rows] = await dbExecute('SELECT * FROM actors WHERE created_at BETWEEN ? AND ? ORDER BY name', [range.startSql, range.endSql]);
   res.json(rows);
 }));
 
 app.get('/actors/:id', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await pool.execute('SELECT * FROM actors WHERE id = ? AND created_at BETWEEN ? AND ?', [req.params.id, range.startSql, range.endSql]);
+  const [rows] = await dbExecute('SELECT * FROM actors WHERE id = ? AND created_at BETWEEN ? AND ?', [req.params.id, range.startSql, range.endSql]);
   if (!rows.length) return httpError(res, 404, 'actor not found');
   res.json(rows[0]);
 }));
@@ -402,14 +450,14 @@ app.get('/actors/:id', asyncH(async (req, res) => {
 app.put('/actors/:id', asyncH(async (req, res) => {
   const { name } = req.body;
   if (!name) return httpError(res, 400, 'name is required');
-  const [r] = await pool.execute('UPDATE actors SET name=? WHERE id=?', [name, req.params.id]);
+  const [r] = await dbExecute('UPDATE actors SET name=? WHERE id=?', [name, req.params.id]);
   if (!r.affectedRows) return httpError(res, 404, 'actor not found');
-  const [rows] = await pool.execute('SELECT * FROM actors WHERE id = ?', [req.params.id]);
+  const [rows] = await dbExecute('SELECT * FROM actors WHERE id = ?', [req.params.id]);
   res.json(rows[0]);
 }));
 
 app.delete('/actors/:id', asyncH(async (req, res) => {
-  const [r] = await pool.execute('DELETE FROM actors WHERE id=?', [req.params.id]);
+  const [r] = await dbExecute('DELETE FROM actors WHERE id=?', [req.params.id]);
   if (!r.affectedRows) return httpError(res, 404, 'actor not found');
   res.status(204).send();
 }));
@@ -418,11 +466,11 @@ app.delete('/actors/:id', asyncH(async (req, res) => {
 app.post('/shows', asyncH(async (req, res) => {
   const { title, description, year } = req.body;
   if (!title) return httpError(res, 400, 'title is required');
-  const [result] = await pool.execute(
+  const [result] = await dbExecute(
     'INSERT INTO shows (title, description, year) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE description=VALUES(description), year=VALUES(year), id=LAST_INSERT_ID(id)',
     [title, description || null, year || null]
   );
-  const [rows] = await pool.execute('SELECT * FROM shows WHERE id = ?', [result.insertId]);
+  const [rows] = await dbExecute('SELECT * FROM shows WHERE id = ?', [result.insertId]);
   res.status(201).json(rows[0]);
 }));
 
@@ -444,17 +492,17 @@ app.get('/shows/:id', asyncH(async (req, res) => {
 app.put('/shows/:id', asyncH(async (req, res) => {
   const { title, description, year } = req.body;
   if (!title) return httpError(res, 400, 'title is required');
-  const [r] = await pool.execute(
+  const [r] = await dbExecute(
     'UPDATE shows SET title=?, description=?, year=? WHERE id=?',
     [title, description || null, year || null, req.params.id]
   );
   if (!r.affectedRows) return httpError(res, 404, 'show not found');
-  const [rows] = await pool.execute('SELECT * FROM shows WHERE id = ?', [req.params.id]);
+  const [rows] = await dbExecute('SELECT * FROM shows WHERE id = ?', [req.params.id]);
   res.json(rows[0]);
 }));
 
 app.delete('/shows/:id', asyncH(async (req, res) => {
-  const [r] = await pool.execute('DELETE FROM shows WHERE id=?', [req.params.id]);
+  const [r] = await dbExecute('DELETE FROM shows WHERE id=?', [req.params.id]);
   if (!r.affectedRows) return httpError(res, 404, 'show not found');
   res.status(204).send();
 }));
@@ -463,19 +511,19 @@ app.delete('/shows/:id', asyncH(async (req, res) => {
 app.post('/shows/:showId/seasons', asyncH(async (req, res) => {
   const { season_number, year } = req.body;
   if (season_number == null) return httpError(res, 400, 'season_number is required');
-  const [show] = await pool.execute('SELECT id FROM shows WHERE id=?', [req.params.showId]);
+  const [show] = await dbExecute('SELECT id FROM shows WHERE id=?', [req.params.showId]);
   if (!show.length) return httpError(res, 404, 'show not found');
-  const [result] = await pool.execute(
+  const [result] = await dbExecute(
     'INSERT INTO seasons (show_id, season_number, year) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE year=VALUES(year), id=LAST_INSERT_ID(id)',
     [req.params.showId, season_number, year || null]
   );
-  const [rows] = await pool.execute('SELECT * FROM seasons WHERE id=?', [result.insertId]);
+  const [rows] = await dbExecute('SELECT * FROM seasons WHERE id=?', [result.insertId]);
   res.status(201).json(rows[0]);
 }));
 
 app.get('/shows/:showId/seasons', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await pool.execute(
+  const [rows] = await dbExecute(
     'SELECT * FROM seasons WHERE show_id=? AND created_at BETWEEN ? AND ? ORDER BY season_number',
     [req.params.showId, range.startSql, range.endSql]
   );
@@ -484,7 +532,7 @@ app.get('/shows/:showId/seasons', asyncH(async (req, res) => {
 
 app.get('/seasons/:id', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await pool.execute('SELECT * FROM seasons WHERE id=? AND created_at BETWEEN ? AND ?', [req.params.id, range.startSql, range.endSql]);
+  const [rows] = await dbExecute('SELECT * FROM seasons WHERE id=? AND created_at BETWEEN ? AND ?', [req.params.id, range.startSql, range.endSql]);
   if (!rows.length) return httpError(res, 404, 'season not found');
   res.json(rows[0]);
 }));
@@ -492,24 +540,24 @@ app.get('/seasons/:id', asyncH(async (req, res) => {
 app.put('/seasons/:id', asyncH(async (req, res) => {
   const { season_number, year } = req.body;
   if (season_number == null) return httpError(res, 400, 'season_number is required');
-  const [r] = await pool.execute(
+  const [r] = await dbExecute(
     'UPDATE seasons SET season_number=?, year=? WHERE id=?',
     [season_number, year || null, req.params.id]
   );
   if (!r.affectedRows) return httpError(res, 404, 'season not found');
-  const [rows] = await pool.execute('SELECT * FROM seasons WHERE id=?', [req.params.id]);
+  const [rows] = await dbExecute('SELECT * FROM seasons WHERE id=?', [req.params.id]);
   res.json(rows[0]);
 }));
 
 app.delete('/seasons/:id', asyncH(async (req, res) => {
-  const [r] = await pool.execute('DELETE FROM seasons WHERE id=?', [req.params.id]);
+  const [r] = await dbExecute('DELETE FROM seasons WHERE id=?', [req.params.id]);
   if (!r.affectedRows) return httpError(res, 404, 'season not found');
   res.status(204).send();
 }));
 
 // --------------------------- EPISODES ---------------------------
 async function getSeasonIdByShowAndNumber(showId, seasonNumber) {
-  const [rows] = await pool.execute(
+  const [rows] = await dbExecute(
     'SELECT id FROM seasons WHERE show_id=? AND season_number=?',
     [showId, seasonNumber]
   );
@@ -522,11 +570,11 @@ app.post('/shows/:showId/episodes', asyncH(async (req, res) => {
   if (!title) return httpError(res, 400, 'title is required');
   const seasonId = await getSeasonIdByShowAndNumber(req.params.showId, season_number);
   if (!seasonId) return httpError(res, 400, 'season does not exist for this show');
-  const [result] = await pool.execute(
+  const [result] = await dbExecute(
     'INSERT INTO episodes (season_id, air_date, title, description) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE air_date=VALUES(air_date), description=VALUES(description), id=LAST_INSERT_ID(id)',
     [seasonId, air_date || null, title, description || null]
   );
-  const [rows] = await pool.execute(
+  const [rows] = await dbExecute(
     `SELECT e.*, s.season_number, s.show_id
      FROM episodes e JOIN seasons s ON s.id=e.season_id
      WHERE e.id=?`,
@@ -545,7 +593,7 @@ app.get('/shows/:showId/episodes', asyncH(async (req, res) => {
 // list episodes in a specific season by season id
 app.get('/seasons/:id/episodes', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [season] = await pool.execute('SELECT id FROM seasons WHERE id=?', [req.params.id]);
+  const [season] = await dbExecute('SELECT id FROM seasons WHERE id=?', [req.params.id]);
   if (!season.length) return httpError(res, 404, 'season not found');
   const include = parseIncludeParam(req.query.include);
   const rows = await runEpisodeQuery({ season_id: req.params.id, startSql: range.startSql, endSql: range.endSql }, include);
@@ -574,7 +622,7 @@ app.put('/episodes/:id', asyncH(async (req, res) => {
   const { season_number, air_date, title, description } = req.body;
   let seasonId = null;
   if (season_number != null) {
-    const [cur] = await pool.execute(
+    const [cur] = await dbExecute(
       'SELECT s.show_id FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?',
       [req.params.id]
     );
@@ -590,9 +638,9 @@ app.put('/episodes/:id', asyncH(async (req, res) => {
   if (description !== undefined) { fields.push('description=?'); params.push(description || null); }
   if (!fields.length) return httpError(res, 400, 'no fields to update');
   params.push(req.params.id);
-  const [r] = await pool.execute(`UPDATE episodes SET ${fields.join(', ')} WHERE id=?`, params);
+  const [r] = await dbExecute(`UPDATE episodes SET ${fields.join(', ')} WHERE id=?`, params);
   if (!r.affectedRows) return httpError(res, 404, 'episode not found');
-  const [rows] = await pool.execute(
+  const [rows] = await dbExecute(
     `SELECT e.*, s.season_number, s.show_id FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?`,
     [req.params.id]
   );
@@ -600,7 +648,7 @@ app.put('/episodes/:id', asyncH(async (req, res) => {
 }));
 
 app.delete('/episodes/:id', asyncH(async (req, res) => {
-  const [r] = await pool.execute('DELETE FROM episodes WHERE id=?', [req.params.id]);
+  const [r] = await dbExecute('DELETE FROM episodes WHERE id=?', [req.params.id]);
   if (!r.affectedRows) return httpError(res, 404, 'episode not found');
   res.status(204).send();
 }));
@@ -610,23 +658,23 @@ app.post('/shows/:showId/characters', asyncH(async (req, res) => {
   const { name, actor_id, actor_name } = req.body;
   if (!name) return httpError(res, 400, 'name is required');
 
-  const [show] = await pool.execute('SELECT id FROM shows WHERE id=?', [req.params.showId]);
+  const [show] = await dbExecute('SELECT id FROM shows WHERE id=?', [req.params.showId]);
   if (!show.length) return httpError(res, 404, 'show not found');
 
   let finalActorId = actor_id || null;
   if (!finalActorId && actor_name) {
-    const [r] = await pool.execute(
+    const [r] = await dbExecute(
       'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
       [actor_name]
     );
     finalActorId = r.insertId;
   }
 
-  const [result] = await pool.execute(
+  const [result] = await dbExecute(
     'INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)',
     [req.params.showId, name, finalActorId]
   );
-  const [created] = await pool.execute(
+  const [created] = await dbExecute(
     `SELECT c.*, a.name as actor_name
      FROM characters c LEFT JOIN actors a ON a.id=c.actor_id
      WHERE c.id=?`,
@@ -660,7 +708,7 @@ app.put('/characters/:id', asyncH(async (req, res) => {
     if (actor_name === null) {
       finalActorId = null;
     } else if (actor_name) {
-      const [r] = await pool.execute(
+      const [r] = await dbExecute(
         'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
         [actor_name]
       );
@@ -670,9 +718,9 @@ app.put('/characters/:id', asyncH(async (req, res) => {
   if (finalActorId !== undefined) { fields.push('actor_id=?'); params.push(finalActorId); }
   if (!fields.length) return httpError(res, 400, 'no fields to update');
   params.push(req.params.id);
-  const [r] = await pool.execute(`UPDATE characters SET ${fields.join(', ')} WHERE id=?`, params);
+  const [r] = await dbExecute(`UPDATE characters SET ${fields.join(', ')} WHERE id=?`, params);
   if (!r.affectedRows) return httpError(res, 404, 'character not found');
-  const [rows] = await pool.execute(
+  const [rows] = await dbExecute(
     `SELECT c.*, a.name as actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id WHERE c.id=?`,
     [req.params.id]
   );
@@ -680,14 +728,14 @@ app.put('/characters/:id', asyncH(async (req, res) => {
 }));
 
 app.delete('/characters/:id', asyncH(async (req, res) => {
-  const [r] = await pool.execute('DELETE FROM characters WHERE id=?', [req.params.id]);
+  const [r] = await dbExecute('DELETE FROM characters WHERE id=?', [req.params.id]);
   if (!r.affectedRows) return httpError(res, 404, 'character not found');
   res.status(204).send();
 }));
 
 // --------------------------- EPISODE-CHARACTER LINKS (many-to-many) ---------------------------
 async function getEpisodeWithShow(episodeId) {
-  const [rows] = await pool.execute(
+  const [rows] = await dbExecute(
     `SELECT e.id AS episode_id, s.show_id, s.id AS season_id
      FROM episodes e JOIN seasons s ON s.id = e.season_id
      WHERE e.id = ?`,
@@ -697,7 +745,7 @@ async function getEpisodeWithShow(episodeId) {
 }
 
 async function getCharacterForShow(characterId, showId) {
-  const [rows] = await pool.execute(
+  const [rows] = await dbExecute(
     'SELECT * FROM characters WHERE id = ? AND show_id = ?',
     [characterId, showId]
   );
@@ -717,17 +765,17 @@ app.post('/episodes/:episodeId/characters', asyncH(async (req, res) => {
   } else if (character_name) {
     let finalActorId = actor_id || null;
     if (!finalActorId && actor_name) {
-      const [aRows] = await pool.execute('SELECT id FROM actors WHERE name=?', [actor_name]);
+      const [aRows] = await dbExecute('SELECT id FROM actors WHERE name=?', [actor_name]);
       if (aRows.length) finalActorId = aRows[0].id;
       else {
-        const [ins] = await pool.execute(
+        const [ins] = await dbExecute(
           'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
           [actor_name]
         );
         finalActorId = ins.insertId;
       }
     }
-    const [insChar] = await pool.execute(
+    const [insChar] = await dbExecute(
       'INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)',
       [ep.show_id, character_name, finalActorId]
     );
@@ -737,11 +785,11 @@ app.post('/episodes/:episodeId/characters', asyncH(async (req, res) => {
   }
 
   try {
-    const [result] = await pool.execute(
+    const [result] = await dbExecute(
       'INSERT INTO episode_characters (episode_id, character_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)',
       [ep.episode_id, charId]
     );
-    const [rows] = await pool.execute(
+    const [rows] = await dbExecute(
       `SELECT ec.id, c.id AS character_id, c.name AS character_name, a.name AS actor_name
        FROM episode_characters ec
        JOIN characters c ON c.id = ec.character_id
@@ -762,7 +810,7 @@ app.get('/episodes/:episodeId/characters', asyncH(async (req, res) => {
   const ep = await getEpisodeWithShow(req.params.episodeId);
   if (!ep) return httpError(res, 404, 'episode not found');
   const include = parseIncludeParam(req.query.include);
-  const [rows] = await pool.execute(
+  const [rows] = await dbExecute(
     `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name
      FROM episode_characters ec
      JOIN characters c ON c.id = ec.character_id
@@ -775,7 +823,7 @@ app.get('/episodes/:episodeId/characters', asyncH(async (req, res) => {
     const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))];
     let actorsMap = {};
     if (actorIds.length) {
-      const [actors] = await pool.query(`SELECT id, name FROM actors WHERE id IN (${actorIds.map(() => '?').join(',')})`, actorIds);
+      const [actors] = await dbQuery(`SELECT id, name FROM actors WHERE id IN (${actorIds.map(() => '?').join(',')})`, actorIds);
       actorsMap = Object.fromEntries(actors.map(a => [a.id, a]));
     }
     return res.json(rows.map(r => ({ id: r.id, show_id: r.show_id, name: r.name, actor_id: r.actor_id, actor: r.actor_id ? actorsMap[r.actor_id] || { id: r.actor_id, name: r.actor_name } : null })));
@@ -789,7 +837,7 @@ app.delete('/episodes/:episodeId/characters/:characterId', asyncH(async (req, re
   if (!ep) return httpError(res, 404, 'episode not found');
   const ok = await getCharacterForShow(req.params.characterId, ep.show_id);
   if (!ok) return httpError(res, 400, 'character does not belong to this show');
-  const [r] = await pool.execute(
+  const [r] = await dbExecute(
     'DELETE FROM episode_characters WHERE episode_id=? AND character_id=?',
     [ep.episode_id, req.params.characterId]
   );
@@ -925,7 +973,7 @@ async function runShowQuery(filters = {}, include = {}) {
     params.push(filters.startSql, filters.endSql);
   }
   const sql = `SELECT id, title, description, year FROM shows ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY year IS NULL, year, title`;
-  const [rows] = await pool.execute(sql, params);
+  const [rows] = await dbExecute(sql, params);
   if (include.episodes) {
     for (const show of rows) {
       show.episodes = await runEpisodeQuery({ show_id: show.id }, include.episodes);
@@ -942,7 +990,7 @@ async function runSeasonQuery(filters){
   if (filters.year_min != null) { where.push('year >= ?'); params.push(filters.year_min); }
   if (filters.year_max != null) { where.push('year <= ?'); params.push(filters.year_max); }
   const sql = `SELECT id, show_id, season_number, year FROM seasons ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY show_id, season_number`;
-  const [rows] = await pool.execute(sql, params);
+  const [rows] = await dbExecute(sql, params);
   return rows;
 }
 
@@ -963,10 +1011,10 @@ async function runEpisodeQuery(filters = {}, include = {}) {
     params.push(filters.startSql, filters.endSql);
   }
   const sql = `SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id = e.season_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY e.air_date IS NULL, e.air_date, e.id`;
-  const [rows] = await pool.execute(sql, params);
+  const [rows] = await dbExecute(sql, params);
   if (include.characters && rows.length) {
     const episodeIds = rows.map(r => r.id);
-    const [chars] = await pool.query(
+    const [chars] = await dbQuery(
       `SELECT ec.episode_id, c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name
        FROM episode_characters ec
        JOIN characters c ON c.id = ec.character_id
@@ -1002,12 +1050,12 @@ async function runCharacterQuery(filters = {}, include = {}) {
     params.push(filters.startSql, filters.endSql);
   }
   const sql = `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY c.name`;
-  const [rows] = await pool.execute(sql, params);
+  const [rows] = await dbExecute(sql, params);
   if (include.actor && rows.length) {
     const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))];
     let actorsMap = {};
     if (actorIds.length) {
-      const [actors] = await pool.query(`SELECT id, name FROM actors WHERE id IN (${actorIds.map(() => '?').join(',')})`, actorIds);
+      const [actors] = await dbQuery(`SELECT id, name FROM actors WHERE id IN (${actorIds.map(() => '?').join(',')})`, actorIds);
       actorsMap = Object.fromEntries(actors.map(a => [a.id, a]));
     }
     for (const r of rows) {
@@ -1022,7 +1070,7 @@ async function runActorQuery(filters){
   const params = [];
   if (filters.name) { where.push('name LIKE ?'); params.push(`%${filters.name}%`); }
   const sql = `SELECT id, name FROM actors ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY name`;
-  const [rows] = await pool.execute(sql, params);
+  const [rows] = await dbExecute(sql, params);
   return rows;
 }
 
@@ -1037,7 +1085,7 @@ function mapCharacter(row) {
     ...row,
     actor: async () => {
       if (!row.actor_id) return null;
-      const [rows] = await pool.execute('SELECT id, name FROM actors WHERE id=?', [row.actor_id]);
+      const [rows] = await dbExecute('SELECT id, name FROM actors WHERE id=?', [row.actor_id]);
       return mapActor(rows[0]);
     }
   };
@@ -1048,7 +1096,7 @@ function mapEpisode(row) {
   return {
     ...row,
     characters: async () => {
-      const [chars] = await pool.query(
+      const [chars] = await dbQuery(
         `SELECT c.id, c.show_id, c.name, c.actor_id
          FROM episode_characters ec
          JOIN characters c ON c.id = ec.character_id
@@ -1075,7 +1123,7 @@ function mapShow(row) {
   return {
     ...row,
     seasons: async () => {
-      const [rows] = await pool.execute('SELECT id, show_id, season_number, year FROM seasons WHERE show_id=? ORDER BY season_number', [row.id]);
+      const [rows] = await dbExecute('SELECT id, show_id, season_number, year FROM seasons WHERE show_id=? ORDER BY season_number', [row.id]);
       return rows.map(mapSeason);
     },
     episodes: async () => {
@@ -1113,7 +1161,7 @@ function registerOperation(name, argNames, resolver) {
 
 registerOperation('health', [], async () => {
   try {
-    const [rows] = await pool.query('SELECT 1 AS ok');
+    const [rows] = await dbQuery('SELECT 1 AS ok');
     return { ok: true, db: rows[0].ok === 1 };
   } catch {
     return { ok: false, db: false };
@@ -1123,7 +1171,7 @@ registerOperation('health', [], async () => {
 registerOperation('actors', [], async () => (await runActorQuery({})).map(mapActor));
 
 registerOperation('actor', ['id'], async ({ id }) => {
-  const [rows] = await pool.execute('SELECT id, name FROM actors WHERE id=?', [id]);
+  const [rows] = await dbExecute('SELECT id, name FROM actors WHERE id=?', [id]);
   return mapActor(rows[0]);
 });
 
@@ -1134,7 +1182,7 @@ registerOperation('show', ['id'], async ({ id }) => mapShow((await runShowQuery(
 registerOperation('seasons', ['show_id'], async ({ show_id }) => (await runSeasonQuery({ show_id })).map(mapSeason));
 
 registerOperation('season', ['id'], async ({ id }) => {
-  const [rows] = await pool.execute('SELECT id, show_id, season_number, year FROM seasons WHERE id=?', [id]);
+  const [rows] = await dbExecute('SELECT id, show_id, season_number, year FROM seasons WHERE id=?', [id]);
   return mapSeason(rows[0]);
 });
 
@@ -1174,78 +1222,78 @@ registerOperation('init', [], async () => {
 });
 
 registerOperation('createActor', ['name'], async ({ name }) => {
-  const [result] = await pool.execute(
+  const [result] = await dbExecute(
     'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
     [name]
   );
-  const [rows] = await pool.execute('SELECT id, name FROM actors WHERE id=?', [result.insertId]);
+  const [rows] = await dbExecute('SELECT id, name FROM actors WHERE id=?', [result.insertId]);
   return mapActor(rows[0] || { id: result.insertId, name });
 });
 
 registerOperation('updateActor', ['id', 'name'], async ({ id, name }) => {
-  const [r] = await pool.execute('UPDATE actors SET name=? WHERE id=?', [name, id]);
+  const [r] = await dbExecute('UPDATE actors SET name=? WHERE id=?', [name, id]);
   if (!r.affectedRows) throw exposedError('actor not found');
-  const [rows] = await pool.execute('SELECT id, name FROM actors WHERE id=?', [id]);
+  const [rows] = await dbExecute('SELECT id, name FROM actors WHERE id=?', [id]);
   return mapActor(rows[0] || { id, name });
 });
 
 registerOperation('deleteActor', ['id'], async ({ id }) => {
-  const [r] = await pool.execute('DELETE FROM actors WHERE id=?', [id]);
+  const [r] = await dbExecute('DELETE FROM actors WHERE id=?', [id]);
   return r.affectedRows > 0;
 });
 
 registerOperation('createShow', ['title', 'description', 'year'], async ({ title, description, year }) => {
-  const [result] = await pool.execute(
+  const [result] = await dbExecute(
     'INSERT INTO shows (title, description, year) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE description=VALUES(description), year=VALUES(year), id=LAST_INSERT_ID(id)',
     [title, description || null, year || null]
   );
-  const [rows] = await pool.execute('SELECT id, title, description, year FROM shows WHERE id=?', [result.insertId]);
+  const [rows] = await dbExecute('SELECT id, title, description, year FROM shows WHERE id=?', [result.insertId]);
   return mapShow(rows[0] || { id: result.insertId, title, description, year });
 });
 
 registerOperation('updateShow', ['id', 'title', 'description', 'year'], async ({ id, title, description, year }) => {
-  const [r] = await pool.execute('UPDATE shows SET title=?, description=?, year=? WHERE id=?', [title, description || null, year || null, id]);
+  const [r] = await dbExecute('UPDATE shows SET title=?, description=?, year=? WHERE id=?', [title, description || null, year || null, id]);
   if (!r.affectedRows) throw exposedError('show not found');
-  const [rows] = await pool.execute('SELECT id, title, description, year FROM shows WHERE id=?', [id]);
+  const [rows] = await dbExecute('SELECT id, title, description, year FROM shows WHERE id=?', [id]);
   return mapShow(rows[0] || { id, title, description, year });
 });
 
 registerOperation('deleteShow', ['id'], async ({ id }) => {
-  const [r] = await pool.execute('DELETE FROM shows WHERE id=?', [id]);
+  const [r] = await dbExecute('DELETE FROM shows WHERE id=?', [id]);
   return r.affectedRows > 0;
 });
 
 registerOperation('createSeason', ['show_id', 'season_number', 'year'], async ({ show_id, season_number, year }) => {
-  const [show] = await pool.execute('SELECT id FROM shows WHERE id=?', [show_id]);
+  const [show] = await dbExecute('SELECT id FROM shows WHERE id=?', [show_id]);
   if (!show.length) throw exposedError('show not found');
-  const [result] = await pool.execute(
+  const [result] = await dbExecute(
     'INSERT INTO seasons (show_id, season_number, year) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE year=VALUES(year), id=LAST_INSERT_ID(id)',
     [show_id, season_number, year || null]
   );
-  const [rows] = await pool.execute('SELECT id, show_id, season_number, year FROM seasons WHERE id=?', [result.insertId]);
+  const [rows] = await dbExecute('SELECT id, show_id, season_number, year FROM seasons WHERE id=?', [result.insertId]);
   return mapSeason(rows[0] || { id: result.insertId, show_id, season_number, year });
 });
 
 registerOperation('updateSeason', ['id', 'season_number', 'year'], async ({ id, season_number, year }) => {
-  const [r] = await pool.execute('UPDATE seasons SET season_number=?, year=? WHERE id=?', [season_number, year || null, id]);
+  const [r] = await dbExecute('UPDATE seasons SET season_number=?, year=? WHERE id=?', [season_number, year || null, id]);
   if (!r.affectedRows) throw exposedError('season not found');
-  const [rows] = await pool.execute('SELECT id, show_id, season_number, year FROM seasons WHERE id=?', [id]);
+  const [rows] = await dbExecute('SELECT id, show_id, season_number, year FROM seasons WHERE id=?', [id]);
   return mapSeason(rows[0] || { id, season_number, year });
 });
 
 registerOperation('deleteSeason', ['id'], async ({ id }) => {
-  const [r] = await pool.execute('DELETE FROM seasons WHERE id=?', [id]);
+  const [r] = await dbExecute('DELETE FROM seasons WHERE id=?', [id]);
   return r.affectedRows > 0;
 });
 
 registerOperation('createEpisode', ['show_id', 'season_number', 'air_date', 'title', 'description'], async ({ show_id, season_number, air_date, title, description }) => {
   const seasonId = await getSeasonIdByShowAndNumber(show_id, season_number);
   if (!seasonId) throw exposedError('season does not exist for this show');
-  const [result] = await pool.execute(
+  const [result] = await dbExecute(
     'INSERT INTO episodes (season_id, air_date, title, description) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE air_date=VALUES(air_date), description=VALUES(description), id=LAST_INSERT_ID(id)',
     [seasonId, air_date || null, title, description || null]
   );
-  const [rows] = await pool.execute(
+  const [rows] = await dbExecute(
     `SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?`,
     [result.insertId]
   );
@@ -1255,7 +1303,7 @@ registerOperation('createEpisode', ['show_id', 'season_number', 'air_date', 'tit
 registerOperation('updateEpisode', ['id', 'season_number', 'air_date', 'title', 'description'], async ({ id, season_number, air_date, title, description }) => {
   let seasonId = null;
   if (season_number != null) {
-    const [cur] = await pool.execute('SELECT s.show_id FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?', [id]);
+    const [cur] = await dbExecute('SELECT s.show_id FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?', [id]);
     if (!cur.length) throw exposedError('episode not found');
     seasonId = await getSeasonIdByShowAndNumber(cur[0].show_id, season_number);
     if (!seasonId) throw exposedError('season does not exist for this show');
@@ -1268,9 +1316,9 @@ registerOperation('updateEpisode', ['id', 'season_number', 'air_date', 'title', 
   if (description !== undefined) { fields.push('description=?'); params.push(description || null); }
   if (!fields.length) throw exposedError('no fields to update');
   params.push(id);
-  const [r] = await pool.execute(`UPDATE episodes SET ${fields.join(', ')} WHERE id=?`, params);
+  const [r] = await dbExecute(`UPDATE episodes SET ${fields.join(', ')} WHERE id=?`, params);
   if (!r.affectedRows) throw exposedError('episode not found');
-  const [rows] = await pool.execute(
+  const [rows] = await dbExecute(
     `SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?`,
     [id]
   );
@@ -1278,18 +1326,18 @@ registerOperation('updateEpisode', ['id', 'season_number', 'air_date', 'title', 
 });
 
 registerOperation('deleteEpisode', ['id'], async ({ id }) => {
-  const [r] = await pool.execute('DELETE FROM episodes WHERE id=?', [id]);
+  const [r] = await dbExecute('DELETE FROM episodes WHERE id=?', [id]);
   return r.affectedRows > 0;
 });
 
 registerOperation('createCharacter', ['show_id', 'name', 'actor_id', 'actor_name'], async ({ show_id, name, actor_id, actor_name }) => {
   let finalActorId = actor_id || null;
   if (!finalActorId && actor_name) {
-    const [r] = await pool.execute('INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)', [actor_name]);
+    const [r] = await dbExecute('INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)', [actor_name]);
     finalActorId = r.insertId;
   }
-  const [result] = await pool.execute('INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)', [show_id, name, finalActorId]);
-  const [rows] = await pool.execute('SELECT c.id, c.show_id, c.name, c.actor_id FROM characters c WHERE c.id=?', [result.insertId]);
+  const [result] = await dbExecute('INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)', [show_id, name, finalActorId]);
+  const [rows] = await dbExecute('SELECT c.id, c.show_id, c.name, c.actor_id FROM characters c WHERE c.id=?', [result.insertId]);
   return mapCharacter(rows[0] || { id: result.insertId, show_id, name, actor_id: finalActorId });
 });
 
@@ -1302,44 +1350,44 @@ registerOperation('updateCharacter', ['id', 'name', 'actor_id', 'actor_name'], a
     if (actor_name === null) {
       finalActorId = null;
     } else if (actor_name) {
-      const [r] = await pool.execute('INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)', [actor_name]);
+      const [r] = await dbExecute('INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)', [actor_name]);
       finalActorId = r.insertId;
     }
   }
   if (finalActorId !== undefined) { fields.push('actor_id=?'); params.push(finalActorId); }
   if (!fields.length) throw exposedError('no fields to update');
   params.push(id);
-  const [r] = await pool.execute(`UPDATE characters SET ${fields.join(', ')} WHERE id=?`, params);
+  const [r] = await dbExecute(`UPDATE characters SET ${fields.join(', ')} WHERE id=?`, params);
   if (!r.affectedRows) throw exposedError('character not found');
-  const [rows] = await pool.execute('SELECT c.id, c.show_id, c.name, c.actor_id FROM characters c WHERE c.id=?', [id]);
+  const [rows] = await dbExecute('SELECT c.id, c.show_id, c.name, c.actor_id FROM characters c WHERE c.id=?', [id]);
   return mapCharacter(rows[0] || { id, name, actor_id: finalActorId });
 });
 
 registerOperation('deleteCharacter', ['id'], async ({ id }) => {
-  const [r] = await pool.execute('DELETE FROM characters WHERE id=?', [id]);
+  const [r] = await dbExecute('DELETE FROM characters WHERE id=?', [id]);
   return r.affectedRows > 0;
 });
 
 registerOperation('addCharacterToEpisode', ['episode_id', 'character_id', 'character_name', 'actor_id', 'actor_name'], async ({ episode_id, character_id, character_name, actor_id, actor_name }) => {
   let charId = character_id || null;
   if (!charId) {
-    const [ep] = await pool.execute('SELECT s.show_id FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?', [episode_id]);
+    const [ep] = await dbExecute('SELECT s.show_id FROM episodes e JOIN seasons s ON s.id=e.season_id WHERE e.id=?', [episode_id]);
     if (!ep.length) throw exposedError('episode not found');
     let actId = actor_id || null;
     if (!actId && actor_name) {
-      const [r] = await pool.execute('INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)', [actor_name]);
+      const [r] = await dbExecute('INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)', [actor_name]);
       actId = r.insertId;
     }
-    const [cr] = await pool.execute('INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)', [ep[0].show_id, character_name, actId]);
+    const [cr] = await dbExecute('INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)', [ep[0].show_id, character_name, actId]);
     charId = cr.insertId;
   }
-  await pool.execute('INSERT IGNORE INTO episode_characters (episode_id, character_id) VALUES (?, ?)', [episode_id, charId]);
-  const [rows] = await pool.query('SELECT c.id, c.show_id, c.name, c.actor_id FROM characters c WHERE c.id=?', [charId]);
+  await dbExecute('INSERT IGNORE INTO episode_characters (episode_id, character_id) VALUES (?, ?)', [episode_id, charId]);
+  const [rows] = await dbQuery('SELECT c.id, c.show_id, c.name, c.actor_id FROM characters c WHERE c.id=?', [charId]);
   return mapCharacter(rows[0] || { id: charId });
 });
 
 registerOperation('removeCharacterFromEpisode', ['episode_id', 'character_id'], async ({ episode_id, character_id }) => {
-  const [r] = await pool.execute('DELETE FROM episode_characters WHERE episode_id=? AND character_id=?', [episode_id, character_id]);
+  const [r] = await dbExecute('DELETE FROM episode_characters WHERE episode_id=? AND character_id=?', [episode_id, character_id]);
   return r.affectedRows > 0;
 });
 
@@ -1550,7 +1598,7 @@ app.delete('/jobs/:id', asyncH(async (req, res) => {
 (async () => {
   try {
     await initDatabase();
-    pool = createDbPool();
+    await refreshPool();
     app.listen(PORT, () => { console.log(`API listening on http://localhost:${PORT}`); });
   } catch (err) {
     console.error('Failed to initialize database', err);
