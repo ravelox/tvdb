@@ -14,6 +14,9 @@ spec:
     metadata:
       labels:
         app: tvdb
+      annotations:
+        checksum/app-secret: {{ include (print $.Template.BasePath "/app-secret.yaml") . | sha256sum }}
+        checksum/storage-secret: {{ include (print $.Template.BasePath "/storage-secret.yaml") . | sha256sum }}
     spec:
       initContainers:
       - name: wait-for-storage
