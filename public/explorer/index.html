@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TV Explorer</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script defer src="./app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="top-bar">
+        <div class="brand">
+          <h1>TV Explorer</h1>
+          <p>Browse shows, seasons, episodes, and characters from the TV API.</p>
+        </div>
+        <div class="top-actions">
+          <span id="connection-status" class="status-pill status-pill--disconnected" role="status">Disconnected</span>
+          <button id="change-token-btn" class="ghost-button" type="button">Change API Token</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="card show-card" aria-labelledby="shows-heading">
+          <header class="card-header">
+            <h2 id="shows-heading">Shows</h2>
+            <p class="card-subtitle">Choose a show to explore its world.</p>
+          </header>
+          <div class="control-group">
+            <label class="field-label" for="show-select">Available shows</label>
+            <select id="show-select" class="select-field">
+              <option value="">Loading shows...</option>
+            </select>
+          </div>
+          <div id="show-details" class="card-body">
+            <h3 id="show-title" class="show-title">Select a show to see details</h3>
+            <p id="show-meta" class="show-meta"></p>
+            <p id="show-description" class="show-description"></p>
+          </div>
+        </section>
+
+        <section class="card episodes-card" aria-labelledby="episodes-heading">
+          <header class="card-header">
+            <h2 id="episodes-heading">Seasons &amp; Episodes</h2>
+            <p class="card-subtitle">Pick a season to reveal its episodes.</p>
+          </header>
+          <div id="season-list" class="season-list" role="list" aria-live="polite"></div>
+          <div id="episodes-container" class="episodes-container">
+            <div id="episodes-list" class="episodes-list" aria-live="polite"></div>
+            <aside id="episode-details" class="episode-details" aria-live="polite">
+              <h3>Episode details</h3>
+              <p class="muted">Select an episode to see its synopsis.</p>
+            </aside>
+          </div>
+        </section>
+
+        <section class="card characters-card" aria-labelledby="characters-heading">
+          <header class="card-header">
+            <h2 id="characters-heading">Characters</h2>
+            <p class="card-subtitle">Meet the people that bring the story to life.</p>
+          </header>
+          <div id="characters-grid" class="characters-grid" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="auth-modal" class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" hidden>
+      <div class="auth-card">
+        <h2 id="auth-title">Connect to the API</h2>
+        <p class="muted">Enter the API token configured on the server to continue.</p>
+        <form id="auth-form" class="auth-form">
+          <label class="field-label" for="auth-token">API token</label>
+          <input id="auth-token" name="token" type="password" class="text-field" autocomplete="off" required />
+          <div class="auth-actions">
+            <button type="submit" class="primary-button">Connect</button>
+            <button type="button" id="auth-cancel" class="ghost-button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

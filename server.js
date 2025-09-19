@@ -136,6 +136,8 @@ if (ENABLE_ADMIN_UI) {
   console.log('[admin] Admin UI disabled (set ENABLE_ADMIN_UI=true to enable)');
 }
 
+app.use('/explorer', express.static(path.join(__dirname, 'public', 'explorer')));
+
 const PUBLIC_AUTH_PATHS = [
   /^\/docs(?:\/|$)/,
   /^\/openapi\.json$/,
