@@ -32,6 +32,16 @@ The API exposes a few optional environment variables for authentication and back
 
 See `.env.example` for a compose-ready set of defaults.
 
+### TV Explorer web app
+
+The repository ships with a standalone client experience at [`/explorer`](http://localhost:3000/explorer/) that consumes the same REST API as the admin console. The page is compiled from static assets under `public/explorer` and offers:
+
+- Token-based authentication: when `API_TOKEN` is set, the app prompts for the token and stores it in the browser's `localStorage`. You can re-enter or clear the token at any time with the **Change API Token** button in the header.
+- Hierarchical navigation: pick a show, then drill into its seasons, episode lists, and per-episode details with modern cards and chips.
+- Character overviews: every show's characters (and their actors, when known) are displayed alongside the season/episode explorer.
+
+Start the server (`npm start`) and open the `/explorer` route in a browser to try it out.
+
 ### Uninstall / Cleanup
 
 When you're done experimenting you can tear everything down:
