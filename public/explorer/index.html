@@ -13,6 +13,7 @@
         <div class="brand">
           <h1>TV Explorer</h1>
           <p>Browse shows, seasons, episodes, and characters from the TV API.</p>
+          <p id="app-version" class="app-version" aria-live="polite" hidden></p>
         </div>
         <div class="top-actions">
           <span id="connection-status" class="status-pill status-pill--disconnected" role="status">Disconnected</span>
@@ -70,6 +71,7 @@
       <div class="auth-card">
         <h2 id="auth-title">Connect to the API</h2>
         <p class="muted">Enter the API token configured on the server to continue.</p>
+        <p id="auth-version" class="muted auth-version" aria-live="polite" hidden></p>
         <p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite" hidden></p>
         <form id="auth-form" class="auth-form">
           <label class="field-label" for="auth-token">API token</label>
