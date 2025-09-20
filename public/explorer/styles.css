@@ -377,6 +377,10 @@ body {
   z-index: 30;
 }
 
+.auth-modal[hidden] {
+  display: none;
+}
+
 .auth-card {
   width: min(420px, 90vw);
   background: rgba(15, 23, 42, 0.9);
