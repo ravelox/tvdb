@@ -6,6 +6,18 @@
 
 : "${API:=http://localhost:3000}"
 
+SEED_COMMON_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SEED_COMMON_REPO_DIR=$(cd "$SEED_COMMON_DIR/.." && pwd)
+
+if [[ -z "${API_TOKEN:-}" ]] && [[ -f "$SEED_COMMON_REPO_DIR/.env" ]]; then
+  # shellcheck disable=SC1091
+  set -a
+  source "$SEED_COMMON_REPO_DIR/.env"
+  set +a
+fi
+
+: "${API_TOKEN:=}"
+
 # How many times to retry a request that fails due to network errors, 5xx
 # responses, or known database connectivity messages.
 SEED_MAX_RETRIES=${SEED_MAX_RETRIES:-10}
@@ -71,7 +83,12 @@ seed_api_request() {
     tmp=$(mktemp)
 
     set +e
-    status=$(command curl --silent --show-error --request "$method" "$url" "$@" --output "$tmp" --write-out '%{http_code}')
+    local curl_common_opts=(--silent --show-error --request "$method")
+    if [[ -n "$API_TOKEN" ]]; then
+      curl_common_opts+=(--header "x-api-token: $API_TOKEN")
+    fi
+
+    status=$(command curl "${curl_common_opts[@]}" "$url" "$@" --output "$tmp" --write-out '%{http_code}')
     exit_code=$?
     set -e
 
