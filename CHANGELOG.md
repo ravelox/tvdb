@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-09-30
+### Added
+- Standalone TV Explorer web app served at `/explorer`, featuring API token authentication, cascading show/season/episode navigation, and per-episode character displays.
+- `seed_sapphire_and_steel.sh` seeding script to populate the Sapphire & Steel catalog through the public API helpers.
+
+### Changed
+- Hardened database calls by retrying fatal connection errors, refreshing the MySQL pool on demand, and exposing the explorer bundle from the main Express app.
+- Helm deployment now annotates pods with checksums of the app and storage secrets so upgrades roll when credentials change.
+- Docker build helper accepts repository overrides and prunes older build tags after a successful push to keep registries tidy.
+
+### Fixed
+- Explorer authentication modal surfaces validation feedback, persists tokens defensively, and reliably closes after a successful connection.
+
 ## [1.2.0] - 2025-09-23
 ### Added
 - POST `/admin/reset-database` endpoint to drop and reinitialize the schema via the API.
