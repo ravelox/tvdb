@@ -8,6 +8,7 @@
     selectedShowId: null,
     selectedSeasonNumber: null,
     selectedEpisodeId: null,
+    deploymentVersion: null,
   };
 
   const elements = {
@@ -27,6 +28,8 @@
     authFeedback: document.getElementById('auth-feedback'),
     authCancel: document.getElementById('auth-cancel'),
     changeTokenBtn: document.getElementById('change-token-btn'),
+    appVersion: document.getElementById('app-version'),
+    authVersion: document.getElementById('auth-version'),
   };
 
   let toastTimer = null;
@@ -76,6 +79,27 @@
     toastTimer = setTimeout(() => {
       toast.classList.remove('toast--visible');
     }, 3000);
+  }
+
+  function setVersionText(text) {
+    const appVersion = elements.appVersion;
+    const authVersion = elements.authVersion;
+    if (appVersion) {
+      if (text) {
+        appVersion.textContent = text;
+        appVersion.hidden = false;
+      } else {
+        appVersion.hidden = true;
+      }
+    }
+    if (authVersion) {
+      if (text) {
+        authVersion.textContent = text;
+        authVersion.hidden = false;
+      } else {
+        authVersion.hidden = true;
+      }
+    }
   }
 
   function openAuthModal() {
@@ -259,6 +283,34 @@
       card.appendChild(name);
       card.appendChild(actor);
       grid.appendChild(card);
+    }
+  }
+
+  async function loadDeploymentVersion() {
+    const fallbackText = 'Version unavailable';
+    try {
+      const response = await fetch('/deployment-version');
+      if (!response.ok) {
+        throw new Error(`Request failed (${response.status})`);
+      }
+      const data = await response.json();
+      state.deploymentVersion = data;
+      const parts = [];
+      const versionLabel = data.appVersion || data.packageVersion || '';
+      if (versionLabel) {
+        parts.push(`Version ${versionLabel}`);
+      }
+      if (data.buildNumber !== undefined && data.buildNumber !== null) {
+        const buildText = String(data.buildNumber).trim();
+        if (buildText) {
+          parts.push(`Build ${buildText}`);
+        }
+      }
+      const displayText = parts.join(' • ') || fallbackText;
+      setVersionText(displayText);
+    } catch (error) {
+      console.warn('Failed to load deployment version', error);
+      setVersionText(fallbackText);
     }
   }
 
@@ -455,6 +507,7 @@
   }
 
   async function bootstrap() {
+    loadDeploymentVersion();
     attachEventListeners();
     let storedToken = null;
     try {

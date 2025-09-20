@@ -54,6 +54,14 @@ body {
   font-size: 0.95rem;
 }
 
+.brand .app-version {
+  margin-top: 12px;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .top-actions {
   display: flex;
   align-items: center;
@@ -275,6 +283,11 @@ body {
 .episode-details .muted,
 .muted {
   color: var(--muted);
+}
+
+.auth-version {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
 }
 
 .characters-grid {
