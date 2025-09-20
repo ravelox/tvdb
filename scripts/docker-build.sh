@@ -197,3 +197,5 @@ if $push_image; then
   prune_old_build_tags "$repository" "$app_version" "$keep_build_tag_count"
 fi
 
+echo "Completed build for ${repository}:${full_version}"
+
