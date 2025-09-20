@@ -371,9 +371,9 @@
       const token = elements.authTokenInput.value.trim();
       if (!token) return;
       persistToken(token);
-      closeAuthModal();
       const ok = await loadShows();
       if (ok) {
+        closeAuthModal();
         showToast('Connected to the API.');
       }
     });
