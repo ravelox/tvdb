@@ -1,0 +1,55 @@
+name: Release on version bump
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Create release when version changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Read current version
+        id: current
+        run: |
+          current_version=$(node -pe "require('./package.json').version")
+          if [ -z "$current_version" ] || [ "$current_version" = "undefined" ]; then
+            echo "Failed to read current version from package.json" >&2
+            exit 1
+          fi
+          echo "version=$current_version" >> "$GITHUB_OUTPUT"
+
+      - name: Read previous version
+        id: previous
+        run: |
+          if git rev-parse HEAD^ >/dev/null 2>&1 && git show HEAD^:package.json >/tmp/package.json.previous 2>/dev/null; then
+            previous_version=$(node -pe "JSON.parse(require('fs').readFileSync('/tmp/package.json.previous', 'utf8')).version")
+          else
+            previous_version=""
+          fi
+          echo "version=$previous_version" >> "$GITHUB_OUTPUT"
+
+      - name: Detect version change
+        id: detect
+        run: |
+          if [ "${{ steps.current.outputs.version }}" = "${{ steps.previous.outputs.version }}" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub release
+        if: steps.detect.outputs.changed == 'true' && steps.current.outputs.version != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.current.outputs.version }}
+          name: Release v${{ steps.current.outputs.version }}
+          body: |
+            Automated release for version ${{ steps.current.outputs.version }}.
+          generate_release_notes: true
