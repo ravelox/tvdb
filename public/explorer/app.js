@@ -31,6 +31,8 @@
 
   let toastTimer = null;
   let showRequestToken = 0;
+  let seasonRequestToken = 0;
+  let episodeRequestToken = 0;
 
   function setAuthFeedback(message, tone = 'info') {
     const feedback = elements.authFeedback;
@@ -239,12 +241,12 @@
   function renderCharacters() {
     const grid = elements.charactersGrid;
     grid.innerHTML = '';
-    if (!state.selectedShowId) {
-      grid.innerHTML = '<div class="empty-state">Select a show to view characters.</div>';
+    if (!state.selectedEpisodeId) {
+      grid.innerHTML = '<div class="empty-state">Select an episode to view characters.</div>';
       return;
     }
     if (!state.characters.length) {
-      grid.innerHTML = '<div class="empty-state">No characters available for this show.</div>';
+      grid.innerHTML = '<div class="empty-state">No characters linked to this episode yet.</div>';
       return;
     }
     for (const character of state.characters) {
@@ -293,6 +295,9 @@
 
   async function selectShow(showId) {
     if (!showId) {
+      showRequestToken += 1;
+      seasonRequestToken += 1;
+      episodeRequestToken += 1;
       state.selectedShowId = null;
       state.seasons = [];
       state.characters = [];
@@ -302,6 +307,7 @@
       renderShowDetails(null);
       renderSeasons();
       renderEpisodes();
+      renderEpisodeDetails(null);
       renderCharacters();
       return;
     }
@@ -309,20 +315,24 @@
     const show = state.shows.find((item) => item.id === state.selectedShowId);
     renderShowDetails(show);
     const requestId = ++showRequestToken;
+    seasonRequestToken += 1;
+    episodeRequestToken += 1;
     try {
-      const [seasons, characters] = await Promise.all([
-        apiFetch(`/shows/${state.selectedShowId}/seasons`),
-        apiFetch(`/shows/${state.selectedShowId}/characters`),
-      ]);
+      const seasons = await apiFetch(`/shows/${state.selectedShowId}/seasons`);
       updateConnectionStatus('connected');
       if (requestId !== showRequestToken) return;
       state.seasons = Array.isArray(seasons) ? seasons : [];
-      state.characters = Array.isArray(characters) ? characters : [];
-      state.selectedSeasonNumber = state.seasons[0]?.season_number || null;
+      state.selectedSeasonNumber = null;
       renderSeasons();
+      state.episodes = [];
+      state.selectedEpisodeId = null;
+      state.characters = [];
       renderCharacters();
-      if (state.selectedSeasonNumber != null) {
-        await selectSeason(state.selectedSeasonNumber);
+      renderEpisodes();
+      renderEpisodeDetails(null);
+      const firstSeason = state.seasons[0];
+      if (firstSeason) {
+        await selectSeason(firstSeason.season_number);
       } else {
         state.episodes = [];
         state.selectedEpisodeId = null;
@@ -340,16 +350,27 @@
 
   async function selectSeason(seasonNumber) {
     if (seasonNumber == null) return;
+    const requestId = ++seasonRequestToken;
+    episodeRequestToken += 1;
     state.selectedSeasonNumber = Number(seasonNumber);
+    state.selectedEpisodeId = null;
+    state.characters = [];
+    state.episodes = [];
     renderSeasons();
+    renderEpisodes();
+    renderEpisodeDetails(null);
+    renderCharacters();
     try {
       const episodes = await apiFetch(`/shows/${state.selectedShowId}/seasons/${state.selectedSeasonNumber}/episodes`);
       updateConnectionStatus('connected');
+      if (requestId !== seasonRequestToken) return;
       state.episodes = Array.isArray(episodes) ? episodes : [];
-      state.selectedEpisodeId = state.episodes[0]?.id || null;
+      if (!state.episodes.length) {
+        renderEpisodes();
+        return;
+      }
       renderEpisodes();
-      const selectedEpisode = state.episodes.find((ep) => ep.id === state.selectedEpisodeId) || null;
-      renderEpisodeDetails(selectedEpisode);
+      await selectEpisode(state.episodes[0].id);
     } catch (error) {
       console.error(error);
       if (error.message !== 'Unauthorized') {
@@ -359,11 +380,30 @@
     }
   }
 
-  function selectEpisode(episodeId) {
+  async function selectEpisode(episodeId) {
     state.selectedEpisodeId = Number(episodeId);
+    state.characters = [];
     renderEpisodes();
     const episode = state.episodes.find((ep) => ep.id === state.selectedEpisodeId) || null;
     renderEpisodeDetails(episode);
+    renderCharacters();
+    if (!state.selectedEpisodeId || !episode) {
+      return;
+    }
+    const requestId = ++episodeRequestToken;
+    try {
+      const characters = await apiFetch(`/episodes/${state.selectedEpisodeId}/characters`);
+      updateConnectionStatus('connected');
+      if (requestId !== episodeRequestToken) return;
+      state.characters = Array.isArray(characters) ? characters : [];
+      renderCharacters();
+    } catch (error) {
+      console.error(error);
+      if (error.message !== 'Unauthorized') {
+        updateConnectionStatus('error');
+        showToast(error.message);
+      }
+    }
   }
 
   function attachEventListeners() {
