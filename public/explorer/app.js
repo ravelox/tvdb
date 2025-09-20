@@ -24,12 +24,29 @@
     authModal: document.getElementById('auth-modal'),
     authForm: document.getElementById('auth-form'),
     authTokenInput: document.getElementById('auth-token'),
+    authFeedback: document.getElementById('auth-feedback'),
     authCancel: document.getElementById('auth-cancel'),
     changeTokenBtn: document.getElementById('change-token-btn'),
   };
 
   let toastTimer = null;
   let showRequestToken = 0;
+
+  function setAuthFeedback(message, tone = 'info') {
+    const feedback = elements.authFeedback;
+    if (!feedback) return;
+    feedback.textContent = message;
+    feedback.hidden = !message;
+    feedback.classList.remove('auth-feedback--error', 'auth-feedback--success');
+    if (!message) {
+      return;
+    }
+    if (tone === 'error') {
+      feedback.classList.add('auth-feedback--error');
+    } else if (tone === 'success') {
+      feedback.classList.add('auth-feedback--success');
+    }
+  }
 
   function updateConnectionStatus(status) {
     const pill = elements.connectionStatus;
@@ -69,6 +86,7 @@
   function closeAuthModal() {
     elements.authModal.hidden = true;
     elements.authForm.reset();
+    setAuthFeedback('');
   }
 
   function persistToken(token) {
@@ -90,6 +108,7 @@
   function handleUnauthorized() {
     persistToken('');
     updateConnectionStatus('disconnected');
+    setAuthFeedback('Invalid API token. Please try again.', 'error');
     openAuthModal();
     showToast('Authentication required. Enter a valid API token.');
     throw new Error('Unauthorized');
@@ -370,11 +389,14 @@
       event.preventDefault();
       const token = elements.authTokenInput.value.trim();
       if (!token) return;
+      setAuthFeedback('Checking token...');
       persistToken(token);
       const ok = await loadShows();
       if (ok) {
         closeAuthModal();
         showToast('Connected to the API.');
+      } else if (!elements.authFeedback.textContent) {
+        setAuthFeedback('Unable to connect. Check the token and try again.', 'error');
       }
     });
 
@@ -387,6 +409,7 @@
 
     elements.changeTokenBtn.addEventListener('click', () => {
       elements.authTokenInput.value = state.token;
+      setAuthFeedback('');
       openAuthModal();
     });
   }
@@ -407,6 +430,7 @@
       }
     }
     updateConnectionStatus('disconnected');
+    setAuthFeedback('');
     openAuthModal();
   }
 
