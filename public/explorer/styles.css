@@ -389,6 +389,24 @@ body {
   gap: 18px;
 }
 
+.auth-feedback {
+  margin: -4px 0 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.auth-feedback[hidden] {
+  display: none;
+}
+
+.auth-feedback--error {
+  color: var(--danger);
+}
+
+.auth-feedback--success {
+  color: var(--accent);
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;
