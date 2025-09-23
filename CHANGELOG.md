@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2025-10-07
+### Added
+- Explorer UI surfaces the running deployment version/build from `/deployment-version` so testers can confirm what they're using.
+- GitHub Actions release automation now tags version bumps and publishes GitHub releases automatically.
+- `seed_sapphire_and_steel.sh` seeds ITV's Sapphire & Steel catalog with cast, seasons, episodes, and episode-to-actor links.
+
+### Changed
+- Database initialization, resets, and pooled queries retry fatal MySQL errors using the new `DB_RETRY_ATTEMPTS`/`DB_RETRY_DELAY_MS` environment controls.
+- All seed scripts share a resilient helper that sources `$API_TOKEN` from `.env`, retries API calls, and preserves actor assignments when reseeding characters.
+- Docker build helper logs the final `<version>.<build>` tag after each run for easier release tracing.
+
+### Fixed
+- Linking characters to episodes no longer clears existing actor associations when the actor isn't being updated.
+- Explorer endpoints consistently return actor metadata for characters so the UI displays cast information reliably.
+
 ## [1.3.0] - 2025-09-30
 ### Added
 - Standalone TV Explorer web app served at `/explorer`, featuring API token authentication, cascading show/season/episode navigation, and per-episode character displays.
