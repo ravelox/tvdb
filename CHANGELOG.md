@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 2025-10-14
+### Changed
+- Explorer UI now uses cascading dropdowns for shows, seasons, episodes, and characters, providing clearer navigation and better keyboard accessibility.
+- Refined explorer layout and styling so the selected show, episode, and character details stay focused while navigation happens in the dropdowns.
+
 ## [1.4.0] - 2025-10-07
 ### Added
 - Explorer UI surfaces the running deployment version/build from `/deployment-version` so testers can confirm what they're using.

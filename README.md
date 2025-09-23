@@ -59,7 +59,7 @@ See `.env.example` for a compose-ready set of defaults—the seed scripts automa
 The repository ships with a standalone client experience at [`/explorer`](http://localhost:3000/explorer/) that consumes the same REST API as the admin console. The page is compiled from static assets under `public/explorer` and offers:
 
 - Token-based authentication: when `API_TOKEN` is set, the app prompts for the token and stores it in the browser's `localStorage`. You can re-enter or clear the token at any time with the **Change API Token** button in the header.
-- Hierarchical navigation: pick a show, then drill into its seasons, episode lists, and per-episode details with modern cards and chips.
+- Cascading dropdown navigation: pick a show, then drill into its seasons, episodes, and characters with keyboard-friendly select menus and focused detail panes.
 - Character overviews: every show's characters (and their actors, when known) are displayed alongside the season/episode explorer.
 - Deployment awareness: the header surfaces the running application version/build using the `/deployment-version` endpoint so you can verify what you're testing.
 
@@ -81,7 +81,7 @@ npm run docker:build -- --push
 ```
 By default the helper script builds an x86_64 image locally (loaded into your Docker daemon). Pass `--push` to publish the multi-architecture image set.
 
-Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.4.0`) plus a numeric suffix such as `1.4.0.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
+Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.4.1`) plus a numeric suffix such as `1.4.1.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
 
 ### Release automation
 

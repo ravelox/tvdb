@@ -21,7 +21,7 @@ spec:
         command: ['sh', '-c', 'until nc -zv tvdb-database 3306; do echo waiting for database; sleep 2; done']
       containers:
       - name: tvdb-app
-        image: ravelox/tvdb:1.4.0
+        image: ravelox/tvdb:1.4.1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
