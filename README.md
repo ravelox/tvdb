@@ -20,17 +20,39 @@ curl -s http://localhost:3000/health | jq .
 
 ### Environment configuration
 
-The API exposes a few optional environment variables for authentication and background job retention:
+The server reads a handful of environment variables so you can mirror the production deployment locally.
+
+**Core service settings**
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `API_TOKEN` | _unset_ | When set, all JSON/GraphQL endpoints require the token via the `x-api-token` header or a `Bearer` authorization header. |
+| `PORT` | `3000` | HTTP port for the Express server. |
+| `DB_HOST` | `localhost` | MySQL host name. |
+| `DB_PORT` | `3306` | MySQL port. |
+| `DB_USER` | `root` | Database user used for schema initialization and pool connections. |
+| `DB_PASSWORD` | _empty string_ | Database password. |
+| `DB_NAME` | `tvdb` | Database/schema name created on startup. |
+| `DB_RETRY_ATTEMPTS` | `3` | Number of times database operations are retried after fatal connection errors. |
+| `DB_RETRY_DELAY_MS` | `200` | Delay (ms) between retry attempts. |
+| `APP_VERSION` | package version | Overrides the version tag emitted in logs and `/deployment-version`. |
+| `BUILD_NUMBER` | _unset_ | Optional numeric suffix appended to the version tag. |
+
+**Authentication & admin UI**
+
+| Variable | Default | Description |
+| --- | --- | --- |
 | `ENABLE_ADMIN_UI` | `true` in non-production, `false` otherwise | Controls whether the `/admin` console is served. |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | _unset_ | If both are provided, `/admin` is protected with HTTP Basic Auth. |
+| `API_TOKEN` | _unset_ | When set, all JSON/GraphQL endpoints require the token via the `x-api-token` header or a `Bearer` authorization header. |
+
+**Background job retention**
+
+| Variable | Default | Description |
+| --- | --- | --- |
 | `JOB_TTL_MS` | `600000` | Time (ms) before completed/failed job results expire. Set to `0` to retain indefinitely. |
 | `MAX_JOB_HISTORY` | `100` | Maximum number of job records kept in memory before the oldest entries are evicted. |
 
-See `.env.example` for a compose-ready set of defaults.
+See `.env.example` for a compose-ready set of defaults—the seed scripts automatically source it so tokens and host overrides apply everywhere.
 
 ### TV Explorer web app
 
@@ -39,6 +61,7 @@ The repository ships with a standalone client experience at [`/explorer`](http:/
 - Token-based authentication: when `API_TOKEN` is set, the app prompts for the token and stores it in the browser's `localStorage`. You can re-enter or clear the token at any time with the **Change API Token** button in the header.
 - Hierarchical navigation: pick a show, then drill into its seasons, episode lists, and per-episode details with modern cards and chips.
 - Character overviews: every show's characters (and their actors, when known) are displayed alongside the season/episode explorer.
+- Deployment awareness: the header surfaces the running application version/build using the `/deployment-version` endpoint so you can verify what you're testing.
 
 Start the server (`npm start`) and open the `/explorer` route in a browser to try it out.
 
@@ -58,7 +81,7 @@ npm run docker:build -- --push
 ```
 By default the helper script builds an x86_64 image locally (loaded into your Docker daemon). Pass `--push` to publish the multi-architecture image set.
 
-Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.3.0`) plus a numeric suffix such as `1.3.0.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
+Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.4.0`) plus a numeric suffix such as `1.4.0.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
 
 ### Release automation
 
@@ -110,6 +133,15 @@ chmod +x seed_doctor_who.sh
 ```
 Seeds seasons 1–26, a subset of actors & characters, one opener episode per season, **and links characters** to each opener.
 
+### Seed Sapphire & Steel
+
+```bash
+chmod +x seed_sapphire_and_steel.sh
+./seed_sapphire_and_steel.sh
+```
+
+Seeds ITV's *Sapphire & Steel* with six seasons of story arcs, creates the principal cast, and links each episode's characters to their matching actors. All seed scripts source `scripts/seed_common.sh`, which loads `$API_TOKEN` from `.env` (if present) and automatically retries requests while the API or database warms up.
+
 ### Reset the database
 ```bash
 ./reset_database.sh       # prompts before dropping data
@@ -130,6 +162,7 @@ Make sure the server is running so reseed scripts start from an empty database.
 ```bash
 curl -s -X POST "$API/init" | jq .
 curl -s "$API/health" | jq .
+curl -s "$API/deployment-version" | jq .
 ```
 
 ### OpenAPI discovery
