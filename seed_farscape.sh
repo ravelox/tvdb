@@ -72,8 +72,20 @@ EOF2
 chars_json=$(seed_api_get "$API/shows/$SHOW_ID/characters")
 printf '%s\n' "$CHAR_TO_ACTOR" | while IFS='|' read -r char actor; do
   [ -z "$char" ] && continue
-  if echo "$chars_json" | jq -e --arg n "$char" 'map(.name)|index($n)' >/dev/null; then
-    echo "Character exists: $char"
+  existing_char=$(echo "$chars_json" | jq -c --arg n "$char" 'map(select(.name==$n)) | (.[0] // empty)')
+  if [ -n "$existing_char" ]; then
+    current_actor=$(printf '%s' "$existing_char" | jq -r '.actor_name // ""')
+    char_id=$(printf '%s' "$existing_char" | jq -r '.id')
+    if [ -n "$actor" ] && [ "$current_actor" != "$actor" ]; then
+      if [ -n "$current_actor" ]; then
+        echo "Updating actor for $char -> $actor"
+      else
+        echo "Setting actor for $char -> $actor"
+      fi
+      seed_api_put "$API/characters/$char_id" -H 'Content-Type: application/json' -d "$(jq -nc --arg a "$actor" '{actor_name:$a}')" >/dev/null
+    else
+      echo "Character exists: $char (actor: ${current_actor:-none})"
+    fi
   else
     echo "Creating character: $char (actor: $actor)"
     seed_api_post "$API/shows/$SHOW_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$char" --arg a "$actor" '{name:$n, actor_name:$a}')" >/dev/null
