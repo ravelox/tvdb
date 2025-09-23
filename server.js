@@ -26,6 +26,7 @@ const fs = require('fs');
 const path = require('path');
 const { randomUUID } = require('crypto');
 const { parseGraphQLQuery } = require('./lib/graphqlParser');
+const { buildCharacterUpsert } = require('./lib/characterUpsert');
 require('dotenv').config();
 const pkg = require('./package.json');
 
@@ -763,22 +764,34 @@ app.post('/episodes/:episodeId/characters', asyncH(async (req, res) => {
     const ok = await getCharacterForShow(charId, ep.show_id);
     if (!ok) return httpError(res, 400, 'character does not belong to this show');
   } else if (character_name) {
-    let finalActorId = actor_id || null;
-    if (!finalActorId && actor_name) {
-      const [aRows] = await dbExecute('SELECT id FROM actors WHERE name=?', [actor_name]);
-      if (aRows.length) finalActorId = aRows[0].id;
-      else {
-        const [ins] = await dbExecute(
-          'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
-          [actor_name]
-        );
-        finalActorId = ins.insertId;
+    let finalActorId = actor_id;
+    let shouldUpdateActor = actor_id !== undefined || actor_name !== undefined;
+    if (actor_name !== undefined) {
+      if (actor_name === null) {
+        finalActorId = null;
+      } else if (actor_name) {
+        const [aRows] = await dbExecute('SELECT id FROM actors WHERE name=?', [actor_name]);
+        if (aRows.length) {
+          finalActorId = aRows[0].id;
+        } else {
+          const [ins] = await dbExecute(
+            'INSERT INTO actors (name) VALUES (?) ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)',
+            [actor_name]
+          );
+          finalActorId = ins.insertId;
+        }
       }
     }
-    const [insChar] = await dbExecute(
-      'INSERT INTO characters (show_id, name, actor_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE actor_id=VALUES(actor_id), id=LAST_INSERT_ID(id)',
-      [ep.show_id, character_name, finalActorId]
-    );
+    if (finalActorId === undefined && !shouldUpdateActor) {
+      finalActorId = null;
+    }
+    const { sql, params } = buildCharacterUpsert({
+      showId: ep.show_id,
+      name: character_name,
+      actorId: finalActorId,
+      shouldUpdateActor,
+    });
+    const [insChar] = await dbExecute(sql, params);
     charId = insChar.insertId;
   } else {
     return httpError(res, 400, 'character_id or character_name is required');
