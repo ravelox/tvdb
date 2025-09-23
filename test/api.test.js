@@ -1,16 +1,28 @@
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const { spawn } = require('node:child_process');
+const fs = require('node:fs');
 const path = require('node:path');
 const pkg = require('../package.json');
 
 let serverProcess;
+const FAIL_TRIGGER = path.resolve(__dirname, '.fail-next-connection');
 
 before(async () => {
+  try {
+    fs.unlinkSync(FAIL_TRIGGER);
+  } catch {}
+  fs.writeFileSync(FAIL_TRIGGER, 'bootstrap');
   const mockPath = path.resolve(__dirname, 'mock-db.js');
   serverProcess = spawn('node', ['-r', mockPath, 'server.js'], {
     cwd: __dirname + '/..',
-    env: { ...process.env, PORT: '3000', APP_VERSION: 'test-1.2.3', BUILD_NUMBER: '42' },
+    env: {
+      ...process.env,
+      PORT: '3000',
+      APP_VERSION: 'test-1.2.3',
+      BUILD_NUMBER: '42',
+      MOCK_DB_FAIL_ONCE_FILE: FAIL_TRIGGER,
+    },
     stdio: ['ignore', 'pipe', 'pipe']
   });
 
@@ -37,8 +49,6 @@ after(() => {
 
 const endpoints = [
   { method: 'GET', path: '/health' },
-  { method: 'POST', path: '/init' },
-  { method: 'POST', path: '/admin/reset-database' },
   { method: 'POST', path: '/actors', body: { name: 'Tester' }, expect: 201 },
   { method: 'GET', path: '/actors' },
   { method: 'GET', path: '/actors/1', expect: 404 },
@@ -109,6 +119,25 @@ for (const ep of endpoints) {
     }
   });
 }
+
+test('database administration endpoints', async (t) => {
+  await t.test('POST /init retries after transient connection failure', async () => {
+    fs.writeFileSync(FAIL_TRIGGER, 'retry');
+    const res = await fetch('http://localhost:3000/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    assert.strictEqual(res.status, 200);
+  });
+
+  await t.test('POST /admin/reset-database', async () => {
+    const res = await fetch('http://localhost:3000/admin/reset-database', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    assert.strictEqual(res.status, 200);
+  });
+});
 
 test('GET /deployment-version returns deployment metadata', async () => {
   const res = await fetch('http://localhost:3000/deployment-version');

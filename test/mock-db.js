@@ -1,11 +1,36 @@
+const fs = require('node:fs');
+const path = require('node:path');
 const Module = require('module');
 
+const TRIGGER_FILE = path.resolve(
+  process.env.MOCK_DB_FAIL_ONCE_FILE || path.join(__dirname, '.fail-next-connection')
+);
+
+function maybeFailConnection() {
+  if (!TRIGGER_FILE) return null;
+  if (!fs.existsSync(TRIGGER_FILE)) return null;
+  try {
+    fs.unlinkSync(TRIGGER_FILE);
+  } catch {
+    // ignore cleanup errors so the failure still triggers
+  }
+  const err = new Error('Mocked connection failure');
+  err.code = 'ECONNREFUSED';
+  return err;
+}
+
 const stub = {
-  createConnection: async () => ({
-    query: async () => [[], []],
-    changeUser: async () => {},
-    end: async () => {},
-  }),
+  createConnection: async () => {
+    const failure = maybeFailConnection();
+    if (failure) {
+      throw failure;
+    }
+    return {
+      query: async () => [[], []],
+      changeUser: async () => {},
+      end: async () => {},
+    };
+  },
   createPool: () => ({
     execute: async (sql, params) => {
       const upper = sql.trim().toUpperCase();
