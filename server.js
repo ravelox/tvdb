@@ -62,44 +62,92 @@ const MAX_JOB_HISTORY = (() => {
   return 100;
 })();
 
+const DB_RETRY_ATTEMPTS = (() => {
+  const raw = Number(process.env.DB_RETRY_ATTEMPTS);
+  if (Number.isFinite(raw) && raw > 0) return Math.floor(raw);
+  return 3;
+})();
+
+const DB_RETRY_DELAY_MS = (() => {
+  const raw = Number(process.env.DB_RETRY_DELAY_MS);
+  if (Number.isFinite(raw) && raw >= 0) return Math.floor(raw);
+  return 200;
+})();
+
 const jobs = new Map();
 
-async function initDatabase() {
-  const conn = await mysql.createConnection({
-    host: DB_HOST,
-    port: DB_PORT,
-    user: DB_USER,
-    password: DB_PASSWORD,
-    multipleStatements: true,
-  });
-  try {
-    await conn.query(
-      `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
-    );
-    await conn.changeUser({ database: DB_NAME });
-    const schemaPath = path.resolve(__dirname, 'schema.sql');
-    const schemaSQL = fs.readFileSync(schemaPath, 'utf8');
-    await conn.query(schemaSQL);
-    console.log('[init] Database and schema ensured');
-  } finally {
-    await conn.end();
+const RETRIABLE_DB_ERROR_CODES = new Set([
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'PROTOCOL_CONNECTION_LOST',
+  'EPIPE',
+  'ETIMEDOUT',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+]);
+
+async function runWithDbRetry(fn, { attempts = DB_RETRY_ATTEMPTS, delayMs = DB_RETRY_DELAY_MS } = {}) {
+  const maxAttempts = Math.max(1, attempts);
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const retriable =
+        (err && (RETRIABLE_DB_ERROR_CODES.has(err.code) || err.fatal === true)) || false;
+      if (!retriable || attempt === maxAttempts - 1) {
+        throw err;
+      }
+      const label = err.code || err.message || 'unknown error';
+      console.error(
+        `[db] Operation failed with ${label}; retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxAttempts})`
+      );
+      if (delayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
   }
+}
+
+async function initDatabase() {
+  await runWithDbRetry(async () => {
+    const conn = await mysql.createConnection({
+      host: DB_HOST,
+      port: DB_PORT,
+      user: DB_USER,
+      password: DB_PASSWORD,
+      multipleStatements: true,
+    });
+    try {
+      await conn.query(
+        `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+      );
+      await conn.changeUser({ database: DB_NAME });
+      const schemaPath = path.resolve(__dirname, 'schema.sql');
+      const schemaSQL = fs.readFileSync(schemaPath, 'utf8');
+      await conn.query(schemaSQL);
+      console.log('[init] Database and schema ensured');
+    } finally {
+      await conn.end();
+    }
+  });
 }
 
 async function resetDatabase() {
   console.log('[reset] Dropping database before reinitializing');
-  const conn = await mysql.createConnection({
-    host: DB_HOST,
-    port: DB_PORT,
-    user: DB_USER,
-    password: DB_PASSWORD,
+  await runWithDbRetry(async () => {
+    const conn = await mysql.createConnection({
+      host: DB_HOST,
+      port: DB_PORT,
+      user: DB_USER,
+      password: DB_PASSWORD,
+    });
+    try {
+      const escapedName = DB_NAME.replace(/`/g, '``');
+      await conn.query(`DROP DATABASE IF EXISTS \`${escapedName}\``);
+    } finally {
+      await conn.end();
+    }
   });
-  try {
-    const escapedName = DB_NAME.replace(/`/g, '``');
-    await conn.query(`DROP DATABASE IF EXISTS \`${escapedName}\``);
-  } finally {
-    await conn.end();
-  }
   await initDatabase();
   console.log('[reset] Database dropped and schema reapplied');
 }
@@ -118,16 +166,6 @@ function createDbPool() {
 }
 
 let pool;
-
-const RETRIABLE_DB_ERROR_CODES = new Set([
-  'ECONNRESET',
-  'ECONNREFUSED',
-  'PROTOCOL_CONNECTION_LOST',
-  'EPIPE',
-  'ETIMEDOUT',
-  'EHOSTUNREACH',
-  'ENETUNREACH',
-]);
 
 async function ensurePool() {
   if (!pool) {
@@ -1231,6 +1269,7 @@ registerOperation('jobResult', ['id'], async ({ id }) => {
 
 registerOperation('init', [], async () => {
   await initDatabase();
+  await refreshPool();
   return true;
 });
 
