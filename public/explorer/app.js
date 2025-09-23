@@ -8,6 +8,7 @@
     selectedShowId: null,
     selectedSeasonNumber: null,
     selectedEpisodeId: null,
+    selectedCharacterId: null,
     deploymentVersion: null,
   };
 
@@ -16,10 +17,11 @@
     showTitle: document.getElementById('show-title'),
     showMeta: document.getElementById('show-meta'),
     showDescription: document.getElementById('show-description'),
-    seasonList: document.getElementById('season-list'),
-    episodesList: document.getElementById('episodes-list'),
+    seasonSelect: document.getElementById('season-select'),
+    episodeSelect: document.getElementById('episode-select'),
     episodeDetails: document.getElementById('episode-details'),
-    charactersGrid: document.getElementById('characters-grid'),
+    characterSelect: document.getElementById('character-select'),
+    characterDetails: document.getElementById('character-details'),
     connectionStatus: document.getElementById('connection-status'),
     toast: document.getElementById('toast'),
     authModal: document.getElementById('auth-modal'),
@@ -184,52 +186,55 @@
   }
 
   function renderSeasons() {
-    const container = elements.seasonList;
-    container.innerHTML = '';
-    if (!state.seasons.length) {
-      container.innerHTML = '<div class="empty-state">No seasons found for this show.</div>';
+    const select = elements.seasonSelect;
+    if (!select) return;
+    select.innerHTML = '';
+    if (!state.selectedShowId) {
+      select.innerHTML = '<option value="">Select a show to load seasons</option>';
+      select.disabled = true;
       return;
     }
-    for (const season of state.seasons) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'season-chip' + (season.season_number === state.selectedSeasonNumber ? ' season-chip--active' : '');
-      button.textContent = `Season ${season.season_number}`;
-      button.dataset.seasonNumber = String(season.season_number);
-      container.appendChild(button);
+    if (!state.seasons.length) {
+      select.innerHTML = '<option value="">No seasons found for this show.</option>';
+      select.disabled = true;
+      return;
+    }
+    select.disabled = false;
+    const options = state.seasons
+      .map((season) => `<option value="${season.season_number}">Season ${season.season_number}</option>`);
+    select.innerHTML = ['<option value="">Select a season...</option>'].concat(options).join('');
+    if (state.selectedSeasonNumber != null) {
+      select.value = String(state.selectedSeasonNumber);
+    } else {
+      select.value = '';
     }
   }
 
   function renderEpisodes() {
-    const list = elements.episodesList;
-    list.innerHTML = '';
+    const select = elements.episodeSelect;
+    if (!select) return;
+    select.innerHTML = '';
     if (!state.selectedSeasonNumber) {
-      list.innerHTML = '<div class="empty-state">Select a season to load episodes.</div>';
+      select.innerHTML = '<option value="">Select a season to load episodes</option>';
+      select.disabled = true;
       return;
     }
     if (!state.episodes.length) {
-      list.innerHTML = '<div class="empty-state">No episodes found for this season.</div>';
+      select.innerHTML = '<option value="">No episodes found for this season.</option>';
+      select.disabled = true;
       return;
     }
-    state.episodes.forEach((episode, index) => {
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'episode-card' + (episode.id === state.selectedEpisodeId ? ' episode-card--active' : '');
-      card.dataset.episodeId = String(episode.id);
-      const title = document.createElement('h4');
-      title.textContent = episode.title || `Episode ${index + 1}`;
-      const info = document.createElement('p');
-      const parts = [];
-      if (episode.air_date) {
-        const airDate = new Date(episode.air_date);
-        if (!Number.isNaN(airDate.getTime())) parts.push(airDate.toLocaleDateString());
-      }
-      parts.push(`Episode ${index + 1}`);
-      info.textContent = parts.join(' • ');
-      card.appendChild(title);
-      card.appendChild(info);
-      list.appendChild(card);
+    select.disabled = false;
+    const options = state.episodes.map((episode, index) => {
+      const title = episode.title || `Episode ${index + 1}`;
+      return `<option value="${episode.id}">${title}</option>`;
     });
+    select.innerHTML = ['<option value="">Select an episode...</option>'].concat(options).join('');
+    if (state.selectedEpisodeId) {
+      select.value = String(state.selectedEpisodeId);
+    } else {
+      select.value = '';
+    }
   }
 
   function renderEpisodeDetails(episode) {
@@ -263,27 +268,66 @@
   }
 
   function renderCharacters() {
-    const grid = elements.charactersGrid;
-    grid.innerHTML = '';
+    const select = elements.characterSelect;
+    if (!select) return;
+    select.innerHTML = '';
     if (!state.selectedEpisodeId) {
-      grid.innerHTML = '<div class="empty-state">Select an episode to view characters.</div>';
+      select.innerHTML = '<option value="">Select an episode to view characters</option>';
+      select.disabled = true;
+      renderCharacterDetails(null);
       return;
     }
     if (!state.characters.length) {
-      grid.innerHTML = '<div class="empty-state">No characters linked to this episode yet.</div>';
+      select.innerHTML = '<option value="">No characters linked to this episode yet.</option>';
+      select.disabled = true;
+      renderCharacterDetails(null);
       return;
     }
-    for (const character of state.characters) {
-      const card = document.createElement('article');
-      card.className = 'character-card';
-      const name = document.createElement('h4');
-      name.textContent = character.name;
-      const actor = document.createElement('span');
-      actor.textContent = character.actor_name ? `Portrayed by ${character.actor_name}` : 'No actor listed';
-      card.appendChild(name);
-      card.appendChild(actor);
-      grid.appendChild(card);
+    select.disabled = false;
+    const options = state.characters.map((character) => `<option value="${character.id}">${character.name}</option>`);
+    select.innerHTML = ['<option value="">Select a character...</option>'].concat(options).join('');
+    if (state.selectedCharacterId != null) {
+      select.value = String(state.selectedCharacterId);
+    } else {
+      select.value = '';
     }
+    const selected = state.characters.find((character) => character.id === state.selectedCharacterId) || null;
+    renderCharacterDetails(selected);
+  }
+
+  function renderCharacterDetails(character) {
+    const panel = elements.characterDetails;
+    if (!panel) return;
+    panel.innerHTML = '';
+    const heading = document.createElement('h3');
+    heading.textContent = character ? character.name : 'Character details';
+    panel.appendChild(heading);
+    if (!state.selectedEpisodeId) {
+      const placeholder = document.createElement('p');
+      placeholder.className = 'muted';
+      placeholder.textContent = 'Select an episode to view characters.';
+      panel.appendChild(placeholder);
+      return;
+    }
+    if (!state.characters.length) {
+      const placeholder = document.createElement('p');
+      placeholder.className = 'muted';
+      placeholder.textContent = 'No characters linked to this episode yet.';
+      panel.appendChild(placeholder);
+      return;
+    }
+    if (!character) {
+      const placeholder = document.createElement('p');
+      placeholder.className = 'muted';
+      placeholder.textContent = 'Select a character to see more details.';
+      panel.appendChild(placeholder);
+      return;
+    }
+    const actorName = character.actor_name || (character.actor && character.actor.name);
+    const actor = document.createElement('p');
+    actor.className = 'muted';
+    actor.textContent = actorName ? `Portrayed by ${actorName}` : 'No actor information available yet.';
+    panel.appendChild(actor);
   }
 
   async function loadDeploymentVersion() {
@@ -356,6 +400,7 @@
       state.episodes = [];
       state.selectedSeasonNumber = null;
       state.selectedEpisodeId = null;
+      state.selectedCharacterId = null;
       renderShowDetails(null);
       renderSeasons();
       renderEpisodes();
@@ -379,6 +424,7 @@
       state.episodes = [];
       state.selectedEpisodeId = null;
       state.characters = [];
+      state.selectedCharacterId = null;
       renderCharacters();
       renderEpisodes();
       renderEpisodeDetails(null);
@@ -388,6 +434,7 @@
       } else {
         state.episodes = [];
         state.selectedEpisodeId = null;
+        state.selectedCharacterId = null;
         renderEpisodes();
         renderEpisodeDetails(null);
       }
@@ -401,11 +448,25 @@
   }
 
   async function selectSeason(seasonNumber) {
-    if (seasonNumber == null) return;
+    if (seasonNumber == null) {
+      seasonRequestToken += 1;
+      episodeRequestToken += 1;
+      state.selectedSeasonNumber = null;
+      state.selectedEpisodeId = null;
+      state.selectedCharacterId = null;
+      state.episodes = [];
+      state.characters = [];
+      renderSeasons();
+      renderEpisodes();
+      renderEpisodeDetails(null);
+      renderCharacters();
+      return;
+    }
     const requestId = ++seasonRequestToken;
     episodeRequestToken += 1;
     state.selectedSeasonNumber = Number(seasonNumber);
     state.selectedEpisodeId = null;
+    state.selectedCharacterId = null;
     state.characters = [];
     state.episodes = [];
     renderSeasons();
@@ -433,8 +494,19 @@
   }
 
   async function selectEpisode(episodeId) {
+    if (episodeId == null || episodeId === '') {
+      episodeRequestToken += 1;
+      state.selectedEpisodeId = null;
+      state.characters = [];
+      state.selectedCharacterId = null;
+      renderEpisodes();
+      renderEpisodeDetails(null);
+      renderCharacters();
+      return;
+    }
     state.selectedEpisodeId = Number(episodeId);
     state.characters = [];
+    state.selectedCharacterId = null;
     renderEpisodes();
     const episode = state.episodes.find((ep) => ep.id === state.selectedEpisodeId) || null;
     renderEpisodeDetails(episode);
@@ -448,6 +520,7 @@
       updateConnectionStatus('connected');
       if (requestId !== episodeRequestToken) return;
       state.characters = Array.isArray(characters) ? characters : [];
+      state.selectedCharacterId = state.characters.length ? state.characters[0].id : null;
       renderCharacters();
     } catch (error) {
       console.error(error);
@@ -458,23 +531,34 @@
     }
   }
 
+  function selectCharacter(characterId) {
+    if (characterId == null || characterId === '') {
+      state.selectedCharacterId = null;
+      renderCharacters();
+      return;
+    }
+    state.selectedCharacterId = Number(characterId);
+    renderCharacters();
+  }
+
   function attachEventListeners() {
     elements.showSelect.addEventListener('change', (event) => {
       selectShow(Number(event.target.value));
     });
 
-    elements.seasonList.addEventListener('click', (event) => {
-      const target = event.target;
-      if (target instanceof HTMLElement && target.dataset.seasonNumber) {
-        selectSeason(Number(target.dataset.seasonNumber));
-      }
+    elements.seasonSelect.addEventListener('change', (event) => {
+      const value = event.target.value;
+      selectSeason(value ? Number(value) : null);
     });
 
-    elements.episodesList.addEventListener('click', (event) => {
-      const target = event.target instanceof HTMLElement ? event.target.closest('.episode-card') : null;
-      if (target && target.dataset.episodeId) {
-        selectEpisode(Number(target.dataset.episodeId));
-      }
+    elements.episodeSelect.addEventListener('change', (event) => {
+      const value = event.target.value;
+      selectEpisode(value ? Number(value) : '');
+    });
+
+    elements.characterSelect.addEventListener('change', (event) => {
+      const value = event.target.value;
+      selectCharacter(value ? Number(value) : '');
     });
 
     elements.authForm.addEventListener('submit', async (event) => {
