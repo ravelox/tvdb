@@ -103,6 +103,12 @@ $SEASON_EPISODE_COUNT
 EOF
 }
 
+format_episode_code() {
+  local season="$1"
+  local episode="$2"
+  printf 'S%02dE%02d' "$((10#$season))" "$((10#$episode))"
+}
+
 # --- create seasons 1..26 if missing ---
 existing_seasons_json=$(seed_api_get "$API/shows/$SHOW_ID/seasons")
 for s in $(seq 1 26); do
@@ -374,7 +380,10 @@ while IFS='|' read -r season air_date title description chars; do
 
   season_episode_counter["$season"]=$(( ${season_episode_counter["$season"]:-0} + 1 ))
   ep_index=${season_episode_counter["$season"]}
-  placeholder_title="S${season}E${ep_index}"
+  episode_code=$(format_episode_code "$season" "$ep_index")
+  placeholder_title="$episode_code"
+  old_placeholder_title="S${season}E${ep_index}"
+  placeholder_label="$placeholder_title"
   episode_payload=$(jq -nc \
     --argjson season "$season" \
     --arg date "$air_date" \
@@ -386,18 +395,24 @@ while IFS='|' read -r season air_date title description chars; do
   ep_id=""
   if [ -n "$existing_entry" ]; then
     ep_id=$(printf '%s' "$existing_entry" | jq -r '.id')
-    echo "  Episode exists (S${season}E${ep_index}): $title"
+    echo "  Episode exists (${episode_code}): $title"
   else
     placeholder_entry=$(printf '%s' "$existing_eps" | jq -c --arg t "$placeholder_title" --argjson s "$season" 'map(select(.season_number == $s and .title == $t)) | (.[0] // empty)')
+    if [ -z "$placeholder_entry" ] && [ "$placeholder_title" != "$old_placeholder_title" ]; then
+      placeholder_entry=$(printf '%s' "$existing_eps" | jq -c --arg t "$old_placeholder_title" --argjson s "$season" 'map(select(.season_number == $s and .title == $t)) | (.[0] // empty)')
+      if [ -n "$placeholder_entry" ]; then
+        placeholder_label="$old_placeholder_title"
+      fi
+    fi
     if [ -n "$placeholder_entry" ]; then
       ep_id=$(printf '%s' "$placeholder_entry" | jq -r '.id')
-      echo "  Renaming placeholder ${placeholder_title} -> $title"
+      echo "  Renaming placeholder ${placeholder_label} -> $title"
       response=$(seed_api_put "$API/episodes/$ep_id" -H 'Content-Type: application/json' -d "$episode_payload")
       if [ -n "$response" ]; then
         ep_id=$(printf '%s' "$response" | jq -r '.id // empty')
       fi
     else
-      echo "  Creating episode (S${season}E${ep_index}): $title"
+      echo "  Creating episode (${episode_code}): $title"
       response=$(seed_api_post "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d "$episode_payload")
       ep_id=$(printf '%s' "$response" | jq -r '.id // empty')
     fi
@@ -424,19 +439,34 @@ for season in $(seq 1 26); do
   total="$(lookup_epcount "$season" || true)"
   [ -z "$total" ] && continue
   y="$(lookup_year "$season" || true)"
-  existing_count=$(seed_api_get "$API/shows/$SHOW_ID/seasons/$season/episodes" | jq 'length')
+  season_eps_json=$(seed_api_get "$API/shows/$SHOW_ID/seasons/$season/episodes")
+  printf '%s\n' "$season_eps_json" | jq -r '.[] | "\(.id)|\(.title)"' | while IFS='|' read -r ep_id ep_title; do
+    [ -z "$ep_id" ] && continue
+    if [[ "$ep_title" =~ ^S([0-9]+)E([0-9]+)$ ]]; then
+      season_digits=$((10#${BASH_REMATCH[1]}))
+      episode_digits=$((10#${BASH_REMATCH[2]}))
+      normalized_title=$(format_episode_code "$season_digits" "$episode_digits")
+      if [ "$ep_title" != "$normalized_title" ]; then
+        echo "  Normalizing placeholder title ${ep_title} -> ${normalized_title}"
+        seed_api_put "$API/episodes/$ep_id" -H 'Content-Type: application/json' -d "$(jq -nc --arg t "$normalized_title" '{title:$t}')" >/dev/null
+      fi
+    fi
+  done
+  season_eps_json=$(seed_api_get "$API/shows/$SHOW_ID/seasons/$season/episodes")
+  existing_count=$(printf '%s' "$season_eps_json" | jq 'length')
   if [ "$existing_count" -ge "$total" ]; then
     echo "Season $season already has $existing_count episodes"
     continue
   fi
   for ep in $(seq $((existing_count+1)) "$total"); do
-    title="S${season}E${ep}"
+    episode_code=$(format_episode_code "$season" "$ep")
+    title="$episode_code"
     air_date=$(date -d "${y:-1900}-01-01 +$((ep-1)) weeks" +%Y-%m-%d 2>/dev/null || printf "%s-01-01" "${y:-1900}")
     description="Episode ${ep} of season ${season}."
     if seed_api_get "$API/shows/$SHOW_ID/episodes" | jq -e --arg t "$title" --argjson s "$season" 'map(select(.season_number == $s and .title == $t)) | length > 0' >/dev/null; then
-      echo "  Episode exists (S${season}E${ep}): $title"
+      echo "  Episode exists (${episode_code}): $title"
     else
-      echo "  Creating episode (S${season}E${ep}): $title"
+      echo "  Creating episode (${episode_code}): $title"
       jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description" '{season_number:$season,air_date:$date, title:$t, description:$d}' | seed_api_post "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
     fi
 
