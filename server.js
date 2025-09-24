@@ -235,7 +235,8 @@ const PUBLIC_AUTH_PATHS = [
   /^\/docs(?:\/|$)/,
   /^\/openapi\.json$/,
   /^\/spec$/,
-  /^\/\.well-known\/openapi\.json$/
+  /^\/\.well-known\/openapi\.json$/,
+  /^\/deployment-version$/
 ];
 function isPublicAuthPath(pathname) {
   return PUBLIC_AUTH_PATHS.some((pattern) => pattern.test(pathname));
