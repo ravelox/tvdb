@@ -368,26 +368,55 @@ EOF
 
 echo "Ensuring known episodes..."
 existing_eps=$(seed_api_get "$API/shows/$SHOW_ID/episodes")
-printf '%s\n' "$EPISODES" | while IFS='|' read -r season air_date title description chars; do
+declare -A season_episode_counter=()
+while IFS='|' read -r season air_date title description chars; do
   [ -z "$season" ] && continue
-  if echo "$existing_eps" | jq -e --arg t "$title" --argjson s "$season" 'map(select(.season_number == $s and .title == $t)) | length > 0' >/dev/null; then
-    echo "  Episode exists (S${season}): $title"
+
+  season_episode_counter["$season"]=$(( ${season_episode_counter["$season"]:-0} + 1 ))
+  ep_index=${season_episode_counter["$season"]}
+  placeholder_title="S${season}E${ep_index}"
+  episode_payload=$(jq -nc \
+    --argjson season "$season" \
+    --arg date "$air_date" \
+    --arg t "$title" \
+    --arg d "$description" \
+    '{season_number:$season, air_date:(($date | select(length>0)) // null), title:$t, description:$d}')
+
+  existing_entry=$(printf '%s' "$existing_eps" | jq -c --arg t "$title" --argjson s "$season" 'map(select(.season_number == $s and .title == $t)) | (.[0] // empty)')
+  ep_id=""
+  if [ -n "$existing_entry" ]; then
+    ep_id=$(printf '%s' "$existing_entry" | jq -r '.id')
+    echo "  Episode exists (S${season}E${ep_index}): $title"
   else
-    echo "  Creating episode (S${season}): $title"
-    jq -nc --argjson season "$season" --arg date "$air_date" --arg t "$title" --arg d "$description" '{season_number:$season, air_date:$date, title:$t, description:$d}' | seed_api_post "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d @- >/dev/null
+    placeholder_entry=$(printf '%s' "$existing_eps" | jq -c --arg t "$placeholder_title" --argjson s "$season" 'map(select(.season_number == $s and .title == $t)) | (.[0] // empty)')
+    if [ -n "$placeholder_entry" ]; then
+      ep_id=$(printf '%s' "$placeholder_entry" | jq -r '.id')
+      echo "  Renaming placeholder ${placeholder_title} -> $title"
+      response=$(seed_api_put "$API/episodes/$ep_id" -H 'Content-Type: application/json' -d "$episode_payload")
+      if [ -n "$response" ]; then
+        ep_id=$(printf '%s' "$response" | jq -r '.id // empty')
+      fi
+    else
+      echo "  Creating episode (S${season}E${ep_index}): $title"
+      response=$(seed_api_post "$API/shows/$SHOW_ID/episodes" -H 'Content-Type: application/json' -d "$episode_payload")
+      ep_id=$(printf '%s' "$response" | jq -r '.id // empty')
+    fi
+    existing_eps=$(seed_api_get "$API/shows/$SHOW_ID/episodes")
   fi
 
-  EP_ID=$(seed_api_get "$API/shows/$SHOW_ID/episodes" | jq -r --arg t "$title" --argjson s "$season" 'map(select(.season_number == $s and .title == $t)) | (.[0].id // empty)')
-  [ -z "$EP_ID" ] && { echo "  Could not resolve episode id for season $season"; continue; }
+  if [ -z "$ep_id" ] || [ "$ep_id" = "null" ]; then
+    ep_id=$(seed_api_get "$API/shows/$SHOW_ID/episodes" | jq -r --arg t "$title" --argjson s "$season" 'map(select(.season_number == $s and .title == $t)) | (.[0].id // empty)')
+    [ -z "$ep_id" ] && { echo "  Could not resolve episode id for season $season"; continue; }
+  fi
 
   if [ -n "$chars" ]; then
     echo "$chars" | tr ';' '\n' | while IFS= read -r c; do
       [ -z "$c" ] && continue
       echo "    + $c"
-      seed_api_post "$API/episodes/$EP_ID/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$c" '{character_name:$n}')" >/dev/null
+      seed_api_post "$API/episodes/$ep_id/characters" -H 'Content-Type: application/json' -d "$(jq -nc --arg n "$c" '{character_name:$n}')" >/dev/null
     done
   fi
-done
+done <<<"$EPISODES"
 
 # --- create placeholder episodes to match IMDb counts ---
 echo "Ensuring additional episodes..."
