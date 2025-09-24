@@ -295,6 +295,46 @@ function parseIncludeParam(val) {
   return result;
 }
 
+function parsePagination(req, res) {
+  const hasLimit = req.query.limit !== undefined;
+  const hasOffset = req.query.offset !== undefined;
+  let limit = null;
+  let offset = 0;
+  if (hasLimit) {
+    const parsed = Number(req.query.limit);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      httpError(res, 400, 'limit must be a positive integer');
+      return null;
+    }
+    limit = parsed;
+  }
+  if (hasOffset) {
+    const parsed = Number(req.query.offset);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      httpError(res, 400, 'offset must be a non-negative integer');
+      return null;
+    }
+    if (!hasLimit) {
+      httpError(res, 400, 'offset requires limit to be set');
+      return null;
+    }
+    offset = parsed;
+  }
+  return { limit, offset };
+}
+
+function withPagination(sql, params, pagination) {
+  if (!pagination || pagination.limit == null) {
+    return { sql, params };
+  }
+  const limit = pagination.limit;
+  const offset = pagination.offset ?? 0;
+  return {
+    sql: `${sql} LIMIT ? OFFSET ?`,
+    params: [...params, limit, offset],
+  };
+}
+
 function adminAuthMiddleware(req, res, next) {
   if (!ADMIN_USERNAME || !ADMIN_PASSWORD) return next();
   const header = req.headers.authorization || '';
@@ -404,10 +444,14 @@ const dateRangeParams = [
   { name:'end', in:'query', required:false, schema:{ type:'string', format:'date-time' }, description:'Filter results with created_at <= end (default limitless)' }
 ];
 const includeParam = { name:'include', in:'query', required:false, schema:{ type:'string' }, description:'Comma separated list of sub-resources to include, e.g. episodes,episodes.characters' };
+const paginationParams = [
+  { name:'limit', in:'query', required:false, schema:{ type:'integer', minimum:1 }, description:'Maximum number of rows to return; omit to return all rows' },
+  { name:'offset', in:'query', required:false, schema:{ type:'integer', minimum:0, default:0 }, description:'Number of rows to skip before returning results (requires limit to be set)' }
+];
 for (const [path, ops] of Object.entries(openapiBase.paths)) {
   for (const [method, op] of Object.entries(ops)) {
     if (method === 'get' && path !== '/deployment-version') {
-      op.parameters = [...(op.parameters || []), ...dateRangeParams, includeParam];
+      op.parameters = [...(op.parameters || []), ...dateRangeParams, includeParam, ...paginationParams];
     }
   }
 }
@@ -476,7 +520,13 @@ app.post('/actors', asyncH(async (req, res) => {
 
 app.get('/actors', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await dbExecute('SELECT * FROM actors WHERE created_at BETWEEN ? AND ? ORDER BY name', [range.startSql, range.endSql]);
+  const pagination = parsePagination(req, res); if (!pagination) return;
+  const query = withPagination(
+    'SELECT * FROM actors WHERE created_at BETWEEN ? AND ? ORDER BY name',
+    [range.startSql, range.endSql],
+    pagination
+  );
+  const [rows] = await dbExecute(query.sql, query.params);
   res.json(rows);
 }));
 
@@ -517,7 +567,8 @@ app.post('/shows', asyncH(async (req, res) => {
 app.get('/shows', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   const include = parseIncludeParam(req.query.include);
-  const rows = await runShowQuery({ startSql: range.startSql, endSql: range.endSql }, include);
+  const pagination = parsePagination(req, res); if (!pagination) return;
+  const rows = await runShowQuery({ startSql: range.startSql, endSql: range.endSql }, include, pagination);
   res.json(rows);
 }));
 
@@ -563,10 +614,13 @@ app.post('/shows/:showId/seasons', asyncH(async (req, res) => {
 
 app.get('/shows/:showId/seasons', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
-  const [rows] = await dbExecute(
+  const pagination = parsePagination(req, res); if (!pagination) return;
+  const query = withPagination(
     'SELECT * FROM seasons WHERE show_id=? AND created_at BETWEEN ? AND ? ORDER BY season_number',
-    [req.params.showId, range.startSql, range.endSql]
+    [req.params.showId, range.startSql, range.endSql],
+    pagination
   );
+  const [rows] = await dbExecute(query.sql, query.params);
   res.json(rows);
 }));
 
@@ -626,7 +680,12 @@ app.post('/shows/:showId/episodes', asyncH(async (req, res) => {
 app.get('/shows/:showId/episodes', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   const include = parseIncludeParam(req.query.include);
-  const rows = await runEpisodeQuery({ show_id: req.params.showId, startSql: range.startSql, endSql: range.endSql }, include);
+  const pagination = parsePagination(req, res); if (!pagination) return;
+  const rows = await runEpisodeQuery(
+    { show_id: req.params.showId, startSql: range.startSql, endSql: range.endSql },
+    include,
+    pagination
+  );
   res.json(rows);
 }));
 
@@ -636,7 +695,12 @@ app.get('/seasons/:id/episodes', asyncH(async (req, res) => {
   const [season] = await dbExecute('SELECT id FROM seasons WHERE id=?', [req.params.id]);
   if (!season.length) return httpError(res, 404, 'season not found');
   const include = parseIncludeParam(req.query.include);
-  const rows = await runEpisodeQuery({ season_id: req.params.id, startSql: range.startSql, endSql: range.endSql }, include);
+  const pagination = parsePagination(req, res); if (!pagination) return;
+  const rows = await runEpisodeQuery(
+    { season_id: req.params.id, startSql: range.startSql, endSql: range.endSql },
+    include,
+    pagination
+  );
   res.json(rows);
 }));
 
@@ -646,7 +710,12 @@ app.get('/shows/:showId/seasons/:seasonNumber/episodes', asyncH(async (req, res)
   const seasonId = await getSeasonIdByShowAndNumber(req.params.showId, req.params.seasonNumber);
   if (!seasonId) return httpError(res, 404, 'season not found for this show');
   const include = parseIncludeParam(req.query.include);
-  const rows = await runEpisodeQuery({ season_id: seasonId, startSql: range.startSql, endSql: range.endSql }, include);
+  const pagination = parsePagination(req, res); if (!pagination) return;
+  const rows = await runEpisodeQuery(
+    { season_id: seasonId, startSql: range.startSql, endSql: range.endSql },
+    include,
+    pagination
+  );
   res.json(rows);
 }));
 
@@ -726,7 +795,12 @@ app.post('/shows/:showId/characters', asyncH(async (req, res) => {
 app.get('/shows/:showId/characters', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   const include = parseIncludeParam(req.query.include);
-  const rows = await runCharacterQuery({ show_id: req.params.showId, startSql: range.startSql, endSql: range.endSql }, include);
+  const pagination = parsePagination(req, res); if (!pagination) return;
+  const rows = await runCharacterQuery(
+    { show_id: req.params.showId, startSql: range.startSql, endSql: range.endSql },
+    include,
+    pagination
+  );
   res.json(rows);
 }));
 
@@ -862,15 +936,18 @@ app.get('/episodes/:episodeId/characters', asyncH(async (req, res) => {
   const ep = await getEpisodeWithShow(req.params.episodeId);
   if (!ep) return httpError(res, 404, 'episode not found');
   const include = parseIncludeParam(req.query.include);
-  const [rows] = await dbExecute(
+  const pagination = parsePagination(req, res); if (!pagination) return;
+  const query = withPagination(
     `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name
      FROM episode_characters ec
      JOIN characters c ON c.id = ec.character_id
      LEFT JOIN actors a ON a.id = c.actor_id
      WHERE ec.episode_id = ? AND ec.created_at BETWEEN ? AND ?
      ORDER BY c.name`,
-    [ep.episode_id, range.startSql, range.endSql]
+    [ep.episode_id, range.startSql, range.endSql],
+    pagination
   );
+  const [rows] = await dbExecute(query.sql, query.params);
   if (include.actor) {
     const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))];
     let actorsMap = {};
@@ -1009,7 +1086,7 @@ function enqueueJob({ type, delay, run }) {
   }, job.eta_ms);
   return job;
 }
-async function runShowQuery(filters = {}, include = {}) {
+async function runShowQuery(filters = {}, include = {}, pagination) {
   const where = [];
   const params = [];
   if (filters.id != null) { where.push('id = ?'); params.push(filters.id); }
@@ -1024,8 +1101,9 @@ async function runShowQuery(filters = {}, include = {}) {
     where.push('created_at BETWEEN ? AND ?');
     params.push(filters.startSql, filters.endSql);
   }
-  const sql = `SELECT id, title, description, year FROM shows ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY year IS NULL, year, title`;
-  const [rows] = await dbExecute(sql, params);
+  const baseSql = `SELECT id, title, description, year FROM shows ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY year IS NULL, year, title`;
+  const query = withPagination(baseSql, params, pagination);
+  const [rows] = await dbExecute(query.sql, query.params);
   if (include.episodes) {
     for (const show of rows) {
       show.episodes = await runEpisodeQuery({ show_id: show.id }, include.episodes);
@@ -1046,7 +1124,7 @@ async function runSeasonQuery(filters){
   return rows;
 }
 
-async function runEpisodeQuery(filters = {}, include = {}) {
+async function runEpisodeQuery(filters = {}, include = {}, pagination) {
   const where = [];
   const params = [];
   if (filters.id != null) { where.push('e.id = ?'); params.push(filters.id); }
@@ -1062,8 +1140,9 @@ async function runEpisodeQuery(filters = {}, include = {}) {
     where.push('e.created_at BETWEEN ? AND ?');
     params.push(filters.startSql, filters.endSql);
   }
-  const sql = `SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id = e.season_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY e.air_date IS NULL, e.air_date, e.id`;
-  const [rows] = await dbExecute(sql, params);
+  const baseSql = `SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id = e.season_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY e.air_date IS NULL, e.air_date, e.id`;
+  const query = withPagination(baseSql, params, pagination);
+  const [rows] = await dbExecute(query.sql, query.params);
   if (include.characters && rows.length) {
     const episodeIds = rows.map(r => r.id);
     const [chars] = await dbQuery(
@@ -1089,7 +1168,7 @@ async function runEpisodeQuery(filters = {}, include = {}) {
   return rows;
 }
 
-async function runCharacterQuery(filters = {}, include = {}) {
+async function runCharacterQuery(filters = {}, include = {}, pagination) {
   const where = [];
   const params = [];
   if (filters.id != null) { where.push('c.id = ?'); params.push(filters.id); }
@@ -1101,8 +1180,9 @@ async function runCharacterQuery(filters = {}, include = {}) {
     where.push('c.created_at BETWEEN ? AND ?');
     params.push(filters.startSql, filters.endSql);
   }
-  const sql = `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY c.name`;
-  const [rows] = await dbExecute(sql, params);
+  const baseSql = `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY c.name`;
+  const query = withPagination(baseSql, params, pagination);
+  const [rows] = await dbExecute(query.sql, query.params);
   if (include.actor && rows.length) {
     const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))];
     let actorsMap = {};

@@ -193,6 +193,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       }
@@ -271,6 +292,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -316,6 +358,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -377,6 +440,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -422,6 +506,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -483,6 +588,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -538,6 +664,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -599,6 +746,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -654,6 +822,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -715,6 +904,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -770,6 +980,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -831,6 +1062,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -952,6 +1204,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -1007,6 +1280,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       },
@@ -1064,6 +1358,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       }
@@ -1119,6 +1434,27 @@
               "type": "string"
             },
             "description": "Comma separated list of sub-resources to include, e.g. episodes,episodes.characters"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
           }
         ]
       }
