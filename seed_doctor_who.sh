@@ -238,138 +238,714 @@ printf '%s\n' "$CHAR_TO_ACTOR" | while IFS='|' read -r char actor; do
   fi
 done
 
-# --- episodes: first five per season ---
+# --- episodes: complete classic series catalogue ---
 read -r -d '' EPISODES <<'EOF' || true
-1|1963-11-23|An Unearthly Child|Series premiere.|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
-1|1963-11-30|The Cave of Skulls|The TARDIS crew faces Stone Age dangers.|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
-1|1963-12-07|The Forest of Fear|The travellers strive to escape the tribe.|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
-1|1963-12-14|The Firemaker|Ian's plan to help the tribe backfires.|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
-1|1963-12-21|The Dead Planet|The crew explores a seemingly lifeless world.|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
-2|1964-10-31|Planet of Giants|The crew is accidentally miniaturized.|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
-2|1964-11-07|Dangerous Journey|The tiny travelers face a deadly insecticide.|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
-2|1964-11-14|Crisis|The team sabotages the pesticide to save humanity.|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
-2|1964-11-21|World's End|The Daleks occupy a future Earth.|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
-2|1964-11-28|The Daleks|The travellers confront Daleks in ruined London.|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
-3|1965-09-11|Four Hundred Dawns|The Doctor meets the stranded Drahvins and Rills on a doomed world.|The Doctor (First Doctor);Vicki;Steven Taylor
-3|1965-09-18|Trap of Steel|The Drahvins imprison the Doctor's friends.|The Doctor (First Doctor);Vicki;Steven Taylor
-3|1965-09-25|Air Lock|Steven's escape attempt leads to Rill contact.|The Doctor (First Doctor);Vicki;Steven Taylor
-3|1965-10-02|The Exploding Planet|The travelers race to leave the doomed world.|The Doctor (First Doctor);Vicki;Steven Taylor
-3|1965-10-09|Temple of Secrets|Arriving in ancient Troy, the Doctor is mistaken for a prophet.|The Doctor (First Doctor);Vicki;Steven Taylor
-4|1966-09-10|The Smugglers: Part 1|The TARDIS lands in 17th-century Cornwall amid pirate schemes.|The Doctor (First Doctor);Ben Jackson;Polly
-4|1966-09-17|The Smugglers: Part 2|Captain Pike plots to seize hidden treasure.|The Doctor (First Doctor);Ben Jackson;Polly
-4|1966-09-24|The Smugglers: Part 3|The Doctor seeks the cryptic clues to Avery's gold.|The Doctor (First Doctor);Ben Jackson;Polly
-4|1966-10-01|The Smugglers: Part 4|A storm and betrayal doom the smugglers' plan.|The Doctor (First Doctor);Ben Jackson;Polly
-4|1966-10-08|The Tenth Planet: Part 1|Earth faces invasion from the mysterious Mondas.|The Doctor (First Doctor);Ben Jackson;Polly
-5|1967-09-02|The Tomb of the Cybermen: Part 1|Archaeologists awaken dormant Cybermen on Telos.|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
-5|1967-09-09|The Tomb of the Cybermen: Part 2|The expedition explores the chilling tomb.|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
-5|1967-09-16|The Tomb of the Cybermen: Part 3|The revived Cybermen reveal their sinister plans.|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
-5|1967-09-23|The Tomb of the Cybermen: Part 4|The Doctor traps the Cybermen back in hibernation.|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
-5|1967-09-30|The Abominable Snowmen: Part 1|Monks in the Himalayas fear a Yeti menace.|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
-6|1968-08-10|The Dominators: Part 1|The Dominators and their Quarks threaten the pacifist planet Dulkis.|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
-6|1968-08-17|The Dominators: Part 2|The Doctor is forced to aid the invaders' drilling.|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
-6|1968-08-24|The Dominators: Part 3|Jamie leads resistance against the Quarks.|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
-6|1968-08-31|The Dominators: Part 4|Zoe devises a way to disable the Quarks.|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
-6|1968-09-07|The Dominators: Part 5|A volcanic eruption destroys the Dominators' plan.|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
-7|1970-01-03|Spearhead from Space: Part 1|Autons invade Earth as the Doctor recovers from regeneration.|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
-7|1970-01-10|Spearhead from Space: Part 2|Nestene energy animates plastic killers.|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
-7|1970-01-17|Spearhead from Space: Part 3|The Doctor battles the Autons in a factory.|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
-7|1970-01-24|Spearhead from Space: Part 4|The Nestene attempts to conquer through the Doctor's mind.|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
-7|1970-01-31|Doctor Who and the Silurians: Part 1|Unearthed reptiles challenge humanity's dominance.|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
-8|1971-01-02|Terror of the Autons: Part 1|The Master allies with the Nestene to unleash killer plastics.|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-8|1971-01-09|Terror of the Autons: Part 2|Deadly dolls and wires sow panic.|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-8|1971-01-16|Terror of the Autons: Part 3|The Master prepares to summon the Nestene power.|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-8|1971-01-23|Terror of the Autons: Part 4|The Doctor thwarts the Master's invasion scheme.|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-8|1971-01-30|The Mind of Evil: Part 1|A prison experiment unleashes a mind parasite.|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-9|1972-01-01|Day of the Daleks: Part 1|Time-traveling rebels try to avert a Dalek-controlled future.|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-9|1972-01-08|Day of the Daleks: Part 2|The Doctor becomes a pawn in the temporal war.|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-9|1972-01-15|Day of the Daleks: Part 3|UNIT prepares for a Dalek assault.|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-9|1972-01-22|Day of the Daleks: Part 4|The Doctor stops the paradox and foils the Daleks.|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-9|1972-01-29|The Curse of Peladon: Part 1|A royal mystery threatens Peladon's entry into the Federation.|The Doctor (Third Doctor);Jo Grant
-10|1972-12-30|The Three Doctors: Part 1|Three incarnations unite to battle Omega.|The Doctor (Third Doctor);The Doctor (Second Doctor);The Doctor (First Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-10|1973-01-06|The Three Doctors: Part 2|The Doctors venture into the antimatter universe.|The Doctor (Third Doctor);The Doctor (Second Doctor);The Doctor (First Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-10|1973-01-13|The Three Doctors: Part 3|Omega traps the Doctors within his realm.|The Doctor (Third Doctor);The Doctor (Second Doctor);The Doctor (First Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-10|1973-01-20|The Three Doctors: Part 4|Omega is defeated and the Doctor's exile ends.|The Doctor (Third Doctor);The Doctor (Second Doctor);The Doctor (First Doctor);Jo Grant;Brigadier Lethbridge-Stewart
-10|1973-01-27|Carnival of Monsters: Part 1|A miniscope traps the Doctor and Jo in a showman's device.|The Doctor (Third Doctor);Jo Grant
-11|1973-12-15|The Time Warrior: Part 1|A Sontaran warrior abducts scientists to the Middle Ages.|The Doctor (Third Doctor);Sarah Jane Smith
-11|1973-12-22|The Time Warrior: Part 2|Sarah investigates the mysterious castle.|The Doctor (Third Doctor);Sarah Jane Smith
-11|1973-12-29|The Time Warrior: Part 3|The Doctor confronts Linx's plans.|The Doctor (Third Doctor);Sarah Jane Smith
-11|1974-01-05|The Time Warrior: Part 4|The Doctor forces Linx to abandon his scheme.|The Doctor (Third Doctor);Sarah Jane Smith
-11|1974-01-12|Invasion of the Dinosaurs: Part 1|London is evacuated as dinosaurs appear in the streets.|The Doctor (Third Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart
-12|1974-12-28|Robot: Part 1|A giant robot is manipulated to steal secrets for a fanatical group.|The Doctor (Fourth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Harry Sullivan
-12|1975-01-04|Robot: Part 2|The Doctor suspects K1's programming has been altered.|The Doctor (Fourth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Harry Sullivan
-12|1975-01-11|Robot: Part 3|UNIT battles the robot as it grows more powerful.|The Doctor (Fourth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Harry Sullivan
-12|1975-01-18|Robot: Part 4|The Doctor stops the nuclear launch and saves the robot.|The Doctor (Fourth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Harry Sullivan
-12|1975-01-25|The Ark in Space: Part 1|The TARDIS arrives on an abandoned space station poised to revive humanity.|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
-13|1975-08-30|Terror of the Zygons: Part 1|Shape-shifting Zygons plot to conquer Earth from Loch Ness.|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan;Brigadier Lethbridge-Stewart
-13|1975-09-06|Terror of the Zygons: Part 2|The Zygons unleash the Skarasen on Scotland.|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan;Brigadier Lethbridge-Stewart
-13|1975-09-13|Terror of the Zygons: Part 3|The Doctor infiltrates the Zygon ship.|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan;Brigadier Lethbridge-Stewart
-13|1975-09-20|Terror of the Zygons: Part 4|The Doctor foils the invasion and departs with Sarah and Harry.|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan;Brigadier Lethbridge-Stewart
-13|1975-09-27|Planet of Evil: Part 1|A jungle world harbors a deadly antimatter creature.|The Doctor (Fourth Doctor);Sarah Jane Smith
-14|1976-09-04|The Masque of Mandragora: Part 1|A mysterious energy draws the TARDIS to Renaissance Italy.|The Doctor (Fourth Doctor);Sarah Jane Smith
-14|1976-09-11|The Masque of Mandragora: Part 2|The Mandragora Helix manipulates a secret cult.|The Doctor (Fourth Doctor);Sarah Jane Smith
-14|1976-09-18|The Masque of Mandragora: Part 3|Sarah is prepared for sacrifice by the cult.|The Doctor (Fourth Doctor);Sarah Jane Smith
-14|1976-09-25|The Masque of Mandragora: Part 4|The Doctor expels the Helix and saves the duke.|The Doctor (Fourth Doctor);Sarah Jane Smith
-14|1976-10-02|The Hand of Fear: Part 1|A quarry blast frees an ancient alien hand.|The Doctor (Fourth Doctor);Sarah Jane Smith
-15|1977-09-03|Horror of Fang Rock: Part 1|An alien hunts the Doctor and lighthouse crew in thick fog.|The Doctor (Fourth Doctor);Leela
-15|1977-09-10|Horror of Fang Rock: Part 2|A survivor hides a deadly secret.|The Doctor (Fourth Doctor);Leela
-15|1977-09-17|Horror of Fang Rock: Part 3|The Rutan reveals its plan to signal reinforcements.|The Doctor (Fourth Doctor);Leela
-15|1977-09-24|Horror of Fang Rock: Part 4|The Doctor destroys the Rutan with a makeshift bomb.|The Doctor (Fourth Doctor);Leela
-15|1977-10-01|The Invisible Enemy: Part 1|A space virus infects the Doctor's mind.|The Doctor (Fourth Doctor);Leela;K9
-16|1978-09-02|The Ribos Operation: Part 1|The Doctor begins the Key to Time quest on the cold world Ribos.|The Doctor (Fourth Doctor);Romana I;K9
-16|1978-09-09|The Ribos Operation: Part 2|Con-men plot to sell a planet to the Graff Vynda-K.|The Doctor (Fourth Doctor);Romana I;K9
-16|1978-09-16|The Ribos Operation: Part 3|The Doctor seeks the first segment amid catacombs.|The Doctor (Fourth Doctor);Romana I;K9
-16|1978-09-23|The Ribos Operation: Part 4|The Doctor outwits the Graff and secures the segment.|The Doctor (Fourth Doctor);Romana I;K9
-16|1978-09-30|The Pirate Planet: Part 1|A hollow world plunders planets for its riches.|The Doctor (Fourth Doctor);Romana I;K9
-17|1979-09-01|Destiny of the Daleks: Part 1|The Doctor is caught in a stalemate between Daleks and Movellans.|The Doctor (Fourth Doctor);Romana II;K9
-17|1979-09-08|Destiny of the Daleks: Part 2|The Daleks capture the Doctor to locate Davros.|The Doctor (Fourth Doctor);Romana II;K9
-17|1979-09-15|Destiny of the Daleks: Part 3|Davros plots to lead the Daleks once more.|The Doctor (Fourth Doctor);Romana II;K9
-17|1979-09-22|Destiny of the Daleks: Part 4|The Movellans plan to destroy Skaro.|The Doctor (Fourth Doctor);Romana II;K9
-17|1979-09-29|City of Death: Part 1|Time slips in Paris hint at a fragmented villain.|The Doctor (Fourth Doctor);Romana II;K9
-18|1980-08-30|The Leisure Hive: Part 1|A tourist world harbors deadly experiments and political intrigue.|The Doctor (Fourth Doctor);Romana II;K9
-18|1980-09-06|The Leisure Hive: Part 2|The Doctor is aged by the Tachyon Recreation Generator.|The Doctor (Fourth Doctor);Romana II;K9
-18|1980-09-13|The Leisure Hive: Part 3|The Foamasi expose a criminal scheme.|The Doctor (Fourth Doctor);Romana II;K9
-18|1980-09-20|The Leisure Hive: Part 4|The Doctor reverses Pangol's clone army.|The Doctor (Fourth Doctor);Romana II;K9
-18|1980-09-27|Meglos: Part 1|A shape-shifting cactus impersonates the Doctor.|The Doctor (Fourth Doctor);Romana II;K9
-19|1982-01-04|Castrovalva: Part 1|The Master traps the disoriented Doctor in a recursive city.|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
-19|1982-01-11|Castrovalva: Part 2|The city begins to unravel as the Master closes in.|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
-19|1982-01-18|Castrovalva: Part 3|Adric's manipulation threatens the Doctor's escape.|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
-19|1982-01-25|Castrovalva: Part 4|The Doctor exposes the illusion and defeats the Master.|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
-19|1982-02-01|Four to Doomsday: Part 1|Monarch's starship hides a plan to conquer Earth.|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
-20|1983-01-03|Arc of Infinity: Part 1|A creature from antimatter seeks form on Gallifrey through the Doctor.|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
-20|1983-01-10|Arc of Infinity: Part 2|The Time Lords plan to execute the Doctor.|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
-20|1983-01-17|Arc of Infinity: Part 3|Omega's return threatens Amsterdam and Gallifrey.|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
-20|1983-01-24|Arc of Infinity: Part 4|Nyssa helps free the Doctor from Omega's control.|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
-20|1983-01-31|Snakedance: Part 1|The Mara resurfaces through Tegan's nightmares.|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
-21|1984-01-05|Warriors of the Deep: Part 1|Silurians and Sea Devils attack an underwater base in 2084.|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
-21|1984-01-12|Warriors of the Deep: Part 2|The Doctor attempts peace talks with the reptiles.|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
-21|1984-01-19|Warriors of the Deep: Part 3|The Myrka breaks into the base.|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
-21|1984-01-26|Warriors of the Deep: Part 4|The Doctor triggers a gas to stop the reptile assault.|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
-21|1984-02-02|The Awakening: Part 1|A war game in a village awakens an ancient entity.|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
-22|1985-01-05|Attack of the Cybermen: Part 1|The Doctor prevents Cybermen from altering Earth's history.|The Doctor (Sixth Doctor);Peri Brown
-22|1985-01-12|Attack of the Cybermen: Part 2|Cyber control on Telos is destroyed.|The Doctor (Sixth Doctor);Peri Brown
-22|1985-01-19|Vengeance on Varos: Part 1|The Doctor lands on a world ruled by televised torture.|The Doctor (Sixth Doctor);Peri Brown
-22|1985-01-26|Vengeance on Varos: Part 2|A revolution overturns Varos's sadistic regime.|The Doctor (Sixth Doctor);Peri Brown
-22|1985-02-02|The Mark of the Rani: Part 1|The Doctor meets another renegade Time Lord.|The Doctor (Sixth Doctor);Peri Brown
-23|1986-09-06|The Mysterious Planet: Part 1|The Doctor is tried while uncovering secrets of Ravolox.|The Doctor (Sixth Doctor);Peri Brown
-23|1986-09-13|The Mysterious Planet: Part 2|The Valeyard presents evidence of the Doctor's meddling.|The Doctor (Sixth Doctor);Peri Brown
-23|1986-09-20|The Mysterious Planet: Part 3|Glitz and Dibber seek the hidden L3 robot.|The Doctor (Sixth Doctor);Peri Brown
-23|1986-09-27|The Mysterious Planet: Part 4|The Doctor exposes the fate of Earth and the Matrix scheme.|The Doctor (Sixth Doctor);Peri Brown
-23|1986-10-04|Mindwarp: Part 1|On Thoros Beta, the Doctor investigates weapon deals.|The Doctor (Sixth Doctor);Peri Brown
-24|1987-09-07|Time and the Rani: Part 1|A newly regenerated Doctor confronts the Rani's experiments.|The Doctor (Seventh Doctor);Mel Bush
-24|1987-09-14|Time and the Rani: Part 2|The Rani uses a brain drain to power her plan.|The Doctor (Seventh Doctor);Mel Bush
-24|1987-09-21|Time and the Rani: Part 3|The Doctor faces mutant bat creatures.|The Doctor (Seventh Doctor);Mel Bush
-24|1987-09-28|Time and the Rani: Part 4|The Doctor frees the kidnapped geniuses.|The Doctor (Seventh Doctor);Mel Bush
-24|1987-10-05|Paradise Towers: Part 1|Kangs battle caretakers in a dystopian high-rise.|The Doctor (Seventh Doctor);Mel Bush
-25|1988-10-05|Remembrance of the Daleks: Part 1|Dalek factions battle over the Hand of Omega in 1963 London.|The Doctor (Seventh Doctor);Ace
-25|1988-10-12|Remembrance of the Daleks: Part 2|The Doctor manipulates the warring Dalek groups.|The Doctor (Seventh Doctor);Ace
-25|1988-10-19|Remembrance of the Daleks: Part 3|The Renegade Daleks seize control of a school.|The Doctor (Seventh Doctor);Ace
-25|1988-10-26|Remembrance of the Daleks: Part 4|The Doctor destroys Skaro with the Hand of Omega.|The Doctor (Seventh Doctor);Ace
-25|1988-11-02|The Happiness Patrol: Part 1|A regime enforcing cheerfulness hides dark secrets.|The Doctor (Seventh Doctor);Ace
-26|1989-09-06|Battlefield: Part 1|The Doctor faces Arthurian foes when Morgaine invades modern Britain.|The Doctor (Seventh Doctor);Ace;Brigadier Lethbridge-Stewart
-26|1989-09-13|Battlefield: Part 2|The Brigadier returns to help combat the knights.|The Doctor (Seventh Doctor);Ace;Brigadier Lethbridge-Stewart
-26|1989-09-20|Battlefield: Part 3|Morgaine seeks Excalibur beneath a lake.|The Doctor (Seventh Doctor);Ace;Brigadier Lethbridge-Stewart
-26|1989-09-27|Battlefield: Part 4|Morgaine is defeated and peace restored.|The Doctor (Seventh Doctor);Ace;Brigadier Lethbridge-Stewart
-26|1989-10-04|Ghost Light: Part 1|An evolving house harbors Earth's evolutionary secrets.|The Doctor (Seventh Doctor);Ace
+1||An Unearthly Child|Episode 1 of "An Unearthly Child".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Cave of Skulls|Episode 2 of "An Unearthly Child".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Forest of Fear|Episode 3 of "An Unearthly Child".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Firemaker|Episode 4 of "An Unearthly Child".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Dead Planet|Episode 1 of "The Daleks".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Survivors|Episode 2 of "The Daleks".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Escape|Episode 3 of "The Daleks".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Ambush|Episode 4 of "The Daleks".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Expedition|Episode 5 of "The Daleks".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Ordeal|Episode 6 of "The Daleks".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Rescue|Episode 7 of "The Daleks".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Edge of Destruction|Episode 1 of "The Edge of Destruction".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Brink of Disaster|Episode 2 of "The Edge of Destruction".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Roof of the World|Episode 1 of "Marco Polo".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Singing Sands|Episode 2 of "Marco Polo".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||Five Hundred Eyes|Episode 3 of "Marco Polo".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Wall of Lies|Episode 4 of "Marco Polo".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||Rider from Shang-Tu|Episode 5 of "Marco Polo".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||Mighty Kublai Khan|Episode 6 of "Marco Polo".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||Assassin at Peking|Episode 7 of "Marco Polo".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Sea of Death|Episode 1 of "The Keys of Marinus".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Velvet Web|Episode 2 of "The Keys of Marinus".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Screaming Jungle|Episode 3 of "The Keys of Marinus".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Snows of Terror|Episode 4 of "The Keys of Marinus".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||Sentence of Death|Episode 5 of "The Keys of Marinus".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Keys of Marinus|Episode 6 of "The Keys of Marinus".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Temple of Evil|Episode 1 of "The Aztecs".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Warriors of Death|Episode 2 of "The Aztecs".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Bride of Sacrifice|Episode 3 of "The Aztecs".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Day of Darkness|Episode 4 of "The Aztecs".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||Strangers in Space|Episode 1 of "The Sensorites".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Unwilling Warriors|Episode 2 of "The Sensorites".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||Hidden Danger|Episode 3 of "The Sensorites".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||A Race Against Death|Episode 4 of "The Sensorites".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||Kidnap|Episode 5 of "The Sensorites".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||A Desperate Venture|Episode 6 of "The Sensorites".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||A Land of Fear|Episode 1 of "The Reign of Terror".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||Guests of Madame Guillotine|Episode 2 of "The Reign of Terror".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||A Change of Identity|Episode 3 of "The Reign of Terror".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||The Tyrant of France|Episode 4 of "The Reign of Terror".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||A Bargain of Necessity|Episode 5 of "The Reign of Terror".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+1||Prisoners of Conciergerie|Episode 6 of "The Reign of Terror".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+2||Planet of Giants|Episode 1 of "Planet of Giants".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+2||Dangerous Journey|Episode 2 of "Planet of Giants".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+2||Crisis|Episode 3 of "Planet of Giants".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+2||World's End|Episode 1 of "The Dalek Invasion of Earth".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+2||The Daleks|Episode 2 of "The Dalek Invasion of Earth".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+2||Day of Reckoning|Episode 3 of "The Dalek Invasion of Earth".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+2||The End of Tomorrow|Episode 4 of "The Dalek Invasion of Earth".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+2||The Waking Ally|Episode 5 of "The Dalek Invasion of Earth".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+2||Flashpoint|Episode 6 of "The Dalek Invasion of Earth".|The Doctor (First Doctor);Susan Foreman;Ian Chesterton;Barbara Wright
+2||The Powerful Enemy|Episode 1 of "The Rescue".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||Desperate Measures|Episode 2 of "The Rescue".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Slave Traders|Episode 1 of "The Romans".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||All Roads Lead to Rome|Episode 2 of "The Romans".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||Conspiracy|Episode 3 of "The Romans".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||Inferno|Episode 4 of "The Romans".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Web Planet|Episode 1 of "The Web Planet".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Zarbi|Episode 2 of "The Web Planet".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||Escape to Danger|Episode 3 of "The Web Planet".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||Crater of Needles|Episode 4 of "The Web Planet".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||Invasion|Episode 5 of "The Web Planet".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Centre|Episode 6 of "The Web Planet".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Lion|Episode 1 of "The Crusade".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Knight of Jaffa|Episode 2 of "The Crusade".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Wheel of Fortune|Episode 3 of "The Crusade".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Warlords|Episode 4 of "The Crusade".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Space Museum|Episode 1 of "The Space Museum".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Dimensions of Time|Episode 2 of "The Space Museum".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Search|Episode 3 of "The Space Museum".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Final Phase|Episode 4 of "The Space Museum".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Executioners|Episode 1 of "The Chase".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Death of Time|Episode 2 of "The Chase".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||Flight Through Eternity|Episode 3 of "The Chase".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||Journey into Terror|Episode 4 of "The Chase".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Death of Doctor Who|Episode 5 of "The Chase".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Planet of Decision|Episode 6 of "The Chase".|The Doctor (First Doctor);Ian Chesterton;Barbara Wright;Vicki
+2||The Watcher|Episode 1 of "The Time Meddler".|The Doctor (First Doctor);Vicki;Steven Taylor
+2||The Meddling Monk|Episode 2 of "The Time Meddler".|The Doctor (First Doctor);Vicki;Steven Taylor
+2||A Battle of Wits|Episode 3 of "The Time Meddler".|The Doctor (First Doctor);Vicki;Steven Taylor
+2||Checkmate|Episode 4 of "The Time Meddler".|The Doctor (First Doctor);Vicki;Steven Taylor
+3||Four Hundred Dawns|Episode 1 of "Galaxy 4".|The Doctor (First Doctor);Vicki;Steven Taylor
+3||Trap of Steel|Episode 2 of "Galaxy 4".|The Doctor (First Doctor);Vicki;Steven Taylor
+3||Air Lock|Episode 3 of "Galaxy 4".|The Doctor (First Doctor);Vicki;Steven Taylor
+3||The Exploding Planet|Episode 4 of "Galaxy 4".|The Doctor (First Doctor);Vicki;Steven Taylor
+3||Mission to the Unknown|Episode 1 of "Mission to the Unknown".|
+3||Temple of Secrets|Episode 1 of "The Myth Makers".|The Doctor (First Doctor);Vicki;Steven Taylor
+3||Small Prophet, Quick Return|Episode 2 of "The Myth Makers".|The Doctor (First Doctor);Vicki;Steven Taylor
+3||Death of a Spy|Episode 3 of "The Myth Makers".|The Doctor (First Doctor);Vicki;Steven Taylor
+3||Horse of Destruction|Episode 4 of "The Myth Makers".|The Doctor (First Doctor);Vicki;Steven Taylor
+3||The Nightmare Begins|Episode 1 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||Day of Armageddon|Episode 2 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||Devil's Planet|Episode 3 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||The Traitors|Episode 4 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||Counter Plot|Episode 5 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||Coronas of the Sun|Episode 6 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||The Feast of Steven|Episode 7 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||Volcano|Episode 8 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||Golden Death|Episode 9 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||Escape Switch|Episode 10 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||The Abandoned Planet|Episode 11 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||Destruction of Time|Episode 12 of "The Daleks' Master Plan".|The Doctor (First Doctor);Steven Taylor
+3||War of God|Episode 1 of "The Massacre".|The Doctor (First Doctor);Steven Taylor
+3||The Sea Beggar|Episode 2 of "The Massacre".|The Doctor (First Doctor);Steven Taylor
+3||Priest of Death|Episode 3 of "The Massacre".|The Doctor (First Doctor);Steven Taylor
+3||Bell of Doom|Episode 4 of "The Massacre".|The Doctor (First Doctor);Steven Taylor
+3||The Steel Sky|Episode 1 of "The Ark".|The Doctor (First Doctor);Steven Taylor
+3||The Plague|Episode 2 of "The Ark".|The Doctor (First Doctor);Steven Taylor
+3||The Return|Episode 3 of "The Ark".|The Doctor (First Doctor);Steven Taylor
+3||The Bomb|Episode 4 of "The Ark".|The Doctor (First Doctor);Steven Taylor
+3||The Celestial Toyroom|Episode 1 of "The Celestial Toymaker".|The Doctor (First Doctor);Steven Taylor
+3||The Hall of Dolls|Episode 2 of "The Celestial Toymaker".|The Doctor (First Doctor);Steven Taylor
+3||The Dancing Floor|Episode 3 of "The Celestial Toymaker".|The Doctor (First Doctor);Steven Taylor
+3||The Final Test|Episode 4 of "The Celestial Toymaker".|The Doctor (First Doctor);Steven Taylor
+3||A Holiday for the Doctor|Episode 1 of "The Gunfighters".|The Doctor (First Doctor);Steven Taylor
+3||Don't Shoot the Pianist|Episode 2 of "The Gunfighters".|The Doctor (First Doctor);Steven Taylor
+3||Johnny Ringo|Episode 3 of "The Gunfighters".|The Doctor (First Doctor);Steven Taylor
+3||The OK Corral|Episode 4 of "The Gunfighters".|The Doctor (First Doctor);Steven Taylor
+3||The Savages: Episode 1|Episode 1 of "The Savages".|The Doctor (First Doctor);Steven Taylor
+3||The Savages: Episode 2|Episode 2 of "The Savages".|The Doctor (First Doctor);Steven Taylor
+3||The Savages: Episode 3|Episode 3 of "The Savages".|The Doctor (First Doctor);Steven Taylor
+3||The Savages: Episode 4|Episode 4 of "The Savages".|The Doctor (First Doctor);Steven Taylor
+3||The War Machines: Episode 1|Episode 1 of "The War Machines".|The Doctor (First Doctor);Ben Jackson;Polly
+3||The War Machines: Episode 2|Episode 2 of "The War Machines".|The Doctor (First Doctor);Ben Jackson;Polly
+3||The War Machines: Episode 3|Episode 3 of "The War Machines".|The Doctor (First Doctor);Ben Jackson;Polly
+3||The War Machines: Episode 4|Episode 4 of "The War Machines".|The Doctor (First Doctor);Ben Jackson;Polly
+4||The Smugglers: Part 1|Part 1 of "The Smugglers".|The Doctor (First Doctor);Ben Jackson;Polly
+4||The Smugglers: Part 2|Part 2 of "The Smugglers".|The Doctor (First Doctor);Ben Jackson;Polly
+4||The Smugglers: Part 3|Part 3 of "The Smugglers".|The Doctor (First Doctor);Ben Jackson;Polly
+4||The Smugglers: Part 4|Part 4 of "The Smugglers".|The Doctor (First Doctor);Ben Jackson;Polly
+4||The Tenth Planet: Part 1|Part 1 of "The Tenth Planet".|The Doctor (First Doctor);Ben Jackson;Polly
+4||The Tenth Planet: Part 2|Part 2 of "The Tenth Planet".|The Doctor (First Doctor);Ben Jackson;Polly
+4||The Tenth Planet: Part 3|Part 3 of "The Tenth Planet".|The Doctor (First Doctor);Ben Jackson;Polly
+4||The Tenth Planet: Part 4|Part 4 of "The Tenth Planet".|The Doctor (First Doctor);Ben Jackson;Polly
+4||The Power of the Daleks: Part 1|Part 1 of "The Power of the Daleks".|The Doctor (Second Doctor);Ben Jackson;Polly
+4||The Power of the Daleks: Part 2|Part 2 of "The Power of the Daleks".|The Doctor (Second Doctor);Ben Jackson;Polly
+4||The Power of the Daleks: Part 3|Part 3 of "The Power of the Daleks".|The Doctor (Second Doctor);Ben Jackson;Polly
+4||The Power of the Daleks: Part 4|Part 4 of "The Power of the Daleks".|The Doctor (Second Doctor);Ben Jackson;Polly
+4||The Power of the Daleks: Part 5|Part 5 of "The Power of the Daleks".|The Doctor (Second Doctor);Ben Jackson;Polly
+4||The Power of the Daleks: Part 6|Part 6 of "The Power of the Daleks".|The Doctor (Second Doctor);Ben Jackson;Polly
+4||The Highlanders: Part 1|Part 1 of "The Highlanders".|The Doctor (Second Doctor);Ben Jackson;Polly
+4||The Highlanders: Part 2|Part 2 of "The Highlanders".|The Doctor (Second Doctor);Ben Jackson;Polly
+4||The Highlanders: Part 3|Part 3 of "The Highlanders".|The Doctor (Second Doctor);Ben Jackson;Polly
+4||The Highlanders: Part 4|Part 4 of "The Highlanders".|The Doctor (Second Doctor);Ben Jackson;Polly
+4||The Underwater Menace: Part 1|Part 1 of "The Underwater Menace".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Underwater Menace: Part 2|Part 2 of "The Underwater Menace".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Underwater Menace: Part 3|Part 3 of "The Underwater Menace".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Underwater Menace: Part 4|Part 4 of "The Underwater Menace".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Moonbase: Part 1|Part 1 of "The Moonbase".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Moonbase: Part 2|Part 2 of "The Moonbase".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Moonbase: Part 3|Part 3 of "The Moonbase".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Moonbase: Part 4|Part 4 of "The Moonbase".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Macra Terror: Part 1|Part 1 of "The Macra Terror".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Macra Terror: Part 2|Part 2 of "The Macra Terror".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Macra Terror: Part 3|Part 3 of "The Macra Terror".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Macra Terror: Part 4|Part 4 of "The Macra Terror".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Faceless Ones: Part 1|Part 1 of "The Faceless Ones".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Faceless Ones: Part 2|Part 2 of "The Faceless Ones".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Faceless Ones: Part 3|Part 3 of "The Faceless Ones".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Faceless Ones: Part 4|Part 4 of "The Faceless Ones".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Faceless Ones: Part 5|Part 5 of "The Faceless Ones".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Faceless Ones: Part 6|Part 6 of "The Faceless Ones".|The Doctor (Second Doctor);Ben Jackson;Polly;Jamie McCrimmon
+4||The Evil of the Daleks: Part 1|Part 1 of "The Evil of the Daleks".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+4||The Evil of the Daleks: Part 2|Part 2 of "The Evil of the Daleks".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+4||The Evil of the Daleks: Part 3|Part 3 of "The Evil of the Daleks".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+4||The Evil of the Daleks: Part 4|Part 4 of "The Evil of the Daleks".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+4||The Evil of the Daleks: Part 5|Part 5 of "The Evil of the Daleks".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+4||The Evil of the Daleks: Part 6|Part 6 of "The Evil of the Daleks".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+4||The Evil of the Daleks: Part 7|Part 7 of "The Evil of the Daleks".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Tomb of the Cybermen: Part 1|Part 1 of "The Tomb of the Cybermen".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Tomb of the Cybermen: Part 2|Part 2 of "The Tomb of the Cybermen".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Tomb of the Cybermen: Part 3|Part 3 of "The Tomb of the Cybermen".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Tomb of the Cybermen: Part 4|Part 4 of "The Tomb of the Cybermen".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Abominable Snowmen: Part 1|Part 1 of "The Abominable Snowmen".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Abominable Snowmen: Part 2|Part 2 of "The Abominable Snowmen".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Abominable Snowmen: Part 3|Part 3 of "The Abominable Snowmen".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Abominable Snowmen: Part 4|Part 4 of "The Abominable Snowmen".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Abominable Snowmen: Part 5|Part 5 of "The Abominable Snowmen".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Abominable Snowmen: Part 6|Part 6 of "The Abominable Snowmen".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Ice Warriors: Part 1|Part 1 of "The Ice Warriors".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Ice Warriors: Part 2|Part 2 of "The Ice Warriors".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Ice Warriors: Part 3|Part 3 of "The Ice Warriors".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Ice Warriors: Part 4|Part 4 of "The Ice Warriors".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Ice Warriors: Part 5|Part 5 of "The Ice Warriors".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Ice Warriors: Part 6|Part 6 of "The Ice Warriors".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Enemy of the World: Part 1|Part 1 of "The Enemy of the World".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Enemy of the World: Part 2|Part 2 of "The Enemy of the World".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Enemy of the World: Part 3|Part 3 of "The Enemy of the World".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Enemy of the World: Part 4|Part 4 of "The Enemy of the World".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Enemy of the World: Part 5|Part 5 of "The Enemy of the World".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Enemy of the World: Part 6|Part 6 of "The Enemy of the World".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Web of Fear: Part 1|Part 1 of "The Web of Fear".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Web of Fear: Part 2|Part 2 of "The Web of Fear".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Web of Fear: Part 3|Part 3 of "The Web of Fear".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Web of Fear: Part 4|Part 4 of "The Web of Fear".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Web of Fear: Part 5|Part 5 of "The Web of Fear".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Web of Fear: Part 6|Part 6 of "The Web of Fear".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||Fury from the Deep: Part 1|Part 1 of "Fury from the Deep".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||Fury from the Deep: Part 2|Part 2 of "Fury from the Deep".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||Fury from the Deep: Part 3|Part 3 of "Fury from the Deep".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||Fury from the Deep: Part 4|Part 4 of "Fury from the Deep".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||Fury from the Deep: Part 5|Part 5 of "Fury from the Deep".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||Fury from the Deep: Part 6|Part 6 of "Fury from the Deep".|The Doctor (Second Doctor);Jamie McCrimmon;Victoria Waterfield
+5||The Wheel in Space: Part 1|Part 1 of "The Wheel in Space".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+5||The Wheel in Space: Part 2|Part 2 of "The Wheel in Space".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+5||The Wheel in Space: Part 3|Part 3 of "The Wheel in Space".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+5||The Wheel in Space: Part 4|Part 4 of "The Wheel in Space".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+5||The Wheel in Space: Part 5|Part 5 of "The Wheel in Space".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+5||The Wheel in Space: Part 6|Part 6 of "The Wheel in Space".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Dominators: Part 1|Part 1 of "The Dominators".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Dominators: Part 2|Part 2 of "The Dominators".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Dominators: Part 3|Part 3 of "The Dominators".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Dominators: Part 4|Part 4 of "The Dominators".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Dominators: Part 5|Part 5 of "The Dominators".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Mind Robber: Part 1|Part 1 of "The Mind Robber".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Mind Robber: Part 2|Part 2 of "The Mind Robber".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Mind Robber: Part 3|Part 3 of "The Mind Robber".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Mind Robber: Part 4|Part 4 of "The Mind Robber".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Mind Robber: Part 5|Part 5 of "The Mind Robber".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Invasion: Part 1|Part 1 of "The Invasion".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Invasion: Part 2|Part 2 of "The Invasion".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Invasion: Part 3|Part 3 of "The Invasion".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Invasion: Part 4|Part 4 of "The Invasion".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Invasion: Part 5|Part 5 of "The Invasion".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Invasion: Part 6|Part 6 of "The Invasion".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Invasion: Part 7|Part 7 of "The Invasion".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Invasion: Part 8|Part 8 of "The Invasion".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Krotons: Part 1|Part 1 of "The Krotons".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Krotons: Part 2|Part 2 of "The Krotons".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Krotons: Part 3|Part 3 of "The Krotons".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Krotons: Part 4|Part 4 of "The Krotons".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Seeds of Death: Part 1|Part 1 of "The Seeds of Death".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Seeds of Death: Part 2|Part 2 of "The Seeds of Death".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Seeds of Death: Part 3|Part 3 of "The Seeds of Death".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Seeds of Death: Part 4|Part 4 of "The Seeds of Death".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Seeds of Death: Part 5|Part 5 of "The Seeds of Death".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Seeds of Death: Part 6|Part 6 of "The Seeds of Death".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Space Pirates: Part 1|Part 1 of "The Space Pirates".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Space Pirates: Part 2|Part 2 of "The Space Pirates".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Space Pirates: Part 3|Part 3 of "The Space Pirates".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Space Pirates: Part 4|Part 4 of "The Space Pirates".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Space Pirates: Part 5|Part 5 of "The Space Pirates".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The Space Pirates: Part 6|Part 6 of "The Space Pirates".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The War Games: Part 1|Part 1 of "The War Games".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The War Games: Part 2|Part 2 of "The War Games".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The War Games: Part 3|Part 3 of "The War Games".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The War Games: Part 4|Part 4 of "The War Games".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The War Games: Part 5|Part 5 of "The War Games".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The War Games: Part 6|Part 6 of "The War Games".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The War Games: Part 7|Part 7 of "The War Games".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The War Games: Part 8|Part 8 of "The War Games".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The War Games: Part 9|Part 9 of "The War Games".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+6||The War Games: Part 10|Part 10 of "The War Games".|The Doctor (Second Doctor);Jamie McCrimmon;Zoe Heriot
+7||Spearhead from Space: Part 1|Part 1 of "Spearhead from Space".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Spearhead from Space: Part 2|Part 2 of "Spearhead from Space".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Spearhead from Space: Part 3|Part 3 of "Spearhead from Space".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Spearhead from Space: Part 4|Part 4 of "Spearhead from Space".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Doctor Who and the Silurians: Part 1|Part 1 of "Doctor Who and the Silurians".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Doctor Who and the Silurians: Part 2|Part 2 of "Doctor Who and the Silurians".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Doctor Who and the Silurians: Part 3|Part 3 of "Doctor Who and the Silurians".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Doctor Who and the Silurians: Part 4|Part 4 of "Doctor Who and the Silurians".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Doctor Who and the Silurians: Part 5|Part 5 of "Doctor Who and the Silurians".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Doctor Who and the Silurians: Part 6|Part 6 of "Doctor Who and the Silurians".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Doctor Who and the Silurians: Part 7|Part 7 of "Doctor Who and the Silurians".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||The Ambassadors of Death: Part 1|Part 1 of "The Ambassadors of Death".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||The Ambassadors of Death: Part 2|Part 2 of "The Ambassadors of Death".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||The Ambassadors of Death: Part 3|Part 3 of "The Ambassadors of Death".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||The Ambassadors of Death: Part 4|Part 4 of "The Ambassadors of Death".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||The Ambassadors of Death: Part 5|Part 5 of "The Ambassadors of Death".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||The Ambassadors of Death: Part 6|Part 6 of "The Ambassadors of Death".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||The Ambassadors of Death: Part 7|Part 7 of "The Ambassadors of Death".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Inferno: Part 1|Part 1 of "Inferno".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Inferno: Part 2|Part 2 of "Inferno".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Inferno: Part 3|Part 3 of "Inferno".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Inferno: Part 4|Part 4 of "Inferno".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Inferno: Part 5|Part 5 of "Inferno".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Inferno: Part 6|Part 6 of "Inferno".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+7||Inferno: Part 7|Part 7 of "Inferno".|The Doctor (Third Doctor);Liz Shaw;Brigadier Lethbridge-Stewart
+8||Terror of the Autons: Part 1|Part 1 of "Terror of the Autons".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||Terror of the Autons: Part 2|Part 2 of "Terror of the Autons".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||Terror of the Autons: Part 3|Part 3 of "Terror of the Autons".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||Terror of the Autons: Part 4|Part 4 of "Terror of the Autons".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Mind of Evil: Part 1|Part 1 of "The Mind of Evil".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Mind of Evil: Part 2|Part 2 of "The Mind of Evil".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Mind of Evil: Part 3|Part 3 of "The Mind of Evil".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Mind of Evil: Part 4|Part 4 of "The Mind of Evil".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Mind of Evil: Part 5|Part 5 of "The Mind of Evil".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Mind of Evil: Part 6|Part 6 of "The Mind of Evil".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Claws of Axos: Part 1|Part 1 of "The Claws of Axos".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Claws of Axos: Part 2|Part 2 of "The Claws of Axos".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Claws of Axos: Part 3|Part 3 of "The Claws of Axos".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Claws of Axos: Part 4|Part 4 of "The Claws of Axos".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||Colony in Space: Part 1|Part 1 of "Colony in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||Colony in Space: Part 2|Part 2 of "Colony in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||Colony in Space: Part 3|Part 3 of "Colony in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||Colony in Space: Part 4|Part 4 of "Colony in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||Colony in Space: Part 5|Part 5 of "Colony in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||Colony in Space: Part 6|Part 6 of "Colony in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Dæmons: Part 1|Part 1 of "The Dæmons".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Dæmons: Part 2|Part 2 of "The Dæmons".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Dæmons: Part 3|Part 3 of "The Dæmons".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Dæmons: Part 4|Part 4 of "The Dæmons".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+8||The Dæmons: Part 5|Part 5 of "The Dæmons".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||Day of the Daleks: Part 1|Part 1 of "Day of the Daleks".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||Day of the Daleks: Part 2|Part 2 of "Day of the Daleks".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||Day of the Daleks: Part 3|Part 3 of "Day of the Daleks".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||Day of the Daleks: Part 4|Part 4 of "Day of the Daleks".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Curse of Peladon: Part 1|Part 1 of "The Curse of Peladon".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Curse of Peladon: Part 2|Part 2 of "The Curse of Peladon".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Curse of Peladon: Part 3|Part 3 of "The Curse of Peladon".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Curse of Peladon: Part 4|Part 4 of "The Curse of Peladon".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Sea Devils: Part 1|Part 1 of "The Sea Devils".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Sea Devils: Part 2|Part 2 of "The Sea Devils".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Sea Devils: Part 3|Part 3 of "The Sea Devils".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Sea Devils: Part 4|Part 4 of "The Sea Devils".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Sea Devils: Part 5|Part 5 of "The Sea Devils".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Sea Devils: Part 6|Part 6 of "The Sea Devils".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Mutants: Part 1|Part 1 of "The Mutants".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Mutants: Part 2|Part 2 of "The Mutants".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Mutants: Part 3|Part 3 of "The Mutants".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Mutants: Part 4|Part 4 of "The Mutants".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Mutants: Part 5|Part 5 of "The Mutants".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Mutants: Part 6|Part 6 of "The Mutants".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Time Monster: Part 1|Part 1 of "The Time Monster".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Time Monster: Part 2|Part 2 of "The Time Monster".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Time Monster: Part 3|Part 3 of "The Time Monster".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Time Monster: Part 4|Part 4 of "The Time Monster".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Time Monster: Part 5|Part 5 of "The Time Monster".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+9||The Time Monster: Part 6|Part 6 of "The Time Monster".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||The Three Doctors: Part 1|Part 1 of "The Three Doctors".|The Doctor (Third Doctor);The Doctor (Second Doctor);The Doctor (First Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||The Three Doctors: Part 2|Part 2 of "The Three Doctors".|The Doctor (Third Doctor);The Doctor (Second Doctor);The Doctor (First Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||The Three Doctors: Part 3|Part 3 of "The Three Doctors".|The Doctor (Third Doctor);The Doctor (Second Doctor);The Doctor (First Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||The Three Doctors: Part 4|Part 4 of "The Three Doctors".|The Doctor (Third Doctor);The Doctor (Second Doctor);The Doctor (First Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||Carnival of Monsters: Part 1|Part 1 of "Carnival of Monsters".|The Doctor (Third Doctor);Jo Grant
+10||Carnival of Monsters: Part 2|Part 2 of "Carnival of Monsters".|The Doctor (Third Doctor);Jo Grant
+10||Carnival of Monsters: Part 3|Part 3 of "Carnival of Monsters".|The Doctor (Third Doctor);Jo Grant
+10||Carnival of Monsters: Part 4|Part 4 of "Carnival of Monsters".|The Doctor (Third Doctor);Jo Grant
+10||Frontier in Space: Part 1|Part 1 of "Frontier in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||Frontier in Space: Part 2|Part 2 of "Frontier in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||Frontier in Space: Part 3|Part 3 of "Frontier in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||Frontier in Space: Part 4|Part 4 of "Frontier in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||Frontier in Space: Part 5|Part 5 of "Frontier in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||Frontier in Space: Part 6|Part 6 of "Frontier in Space".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||Planet of the Daleks: Part 1|Part 1 of "Planet of the Daleks".|The Doctor (Third Doctor);Jo Grant
+10||Planet of the Daleks: Part 2|Part 2 of "Planet of the Daleks".|The Doctor (Third Doctor);Jo Grant
+10||Planet of the Daleks: Part 3|Part 3 of "Planet of the Daleks".|The Doctor (Third Doctor);Jo Grant
+10||Planet of the Daleks: Part 4|Part 4 of "Planet of the Daleks".|The Doctor (Third Doctor);Jo Grant
+10||Planet of the Daleks: Part 5|Part 5 of "Planet of the Daleks".|The Doctor (Third Doctor);Jo Grant
+10||Planet of the Daleks: Part 6|Part 6 of "Planet of the Daleks".|The Doctor (Third Doctor);Jo Grant
+10||The Green Death: Part 1|Part 1 of "The Green Death".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||The Green Death: Part 2|Part 2 of "The Green Death".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||The Green Death: Part 3|Part 3 of "The Green Death".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||The Green Death: Part 4|Part 4 of "The Green Death".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||The Green Death: Part 5|Part 5 of "The Green Death".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+10||The Green Death: Part 6|Part 6 of "The Green Death".|The Doctor (Third Doctor);Jo Grant;Brigadier Lethbridge-Stewart
+11||The Time Warrior: Part 1|Part 1 of "The Time Warrior".|The Doctor (Third Doctor);Sarah Jane Smith
+11||The Time Warrior: Part 2|Part 2 of "The Time Warrior".|The Doctor (Third Doctor);Sarah Jane Smith
+11||The Time Warrior: Part 3|Part 3 of "The Time Warrior".|The Doctor (Third Doctor);Sarah Jane Smith
+11||The Time Warrior: Part 4|Part 4 of "The Time Warrior".|The Doctor (Third Doctor);Sarah Jane Smith
+11||Invasion of the Dinosaurs: Part 1|Part 1 of "Invasion of the Dinosaurs".|The Doctor (Third Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart
+11||Invasion of the Dinosaurs: Part 2|Part 2 of "Invasion of the Dinosaurs".|The Doctor (Third Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart
+11||Invasion of the Dinosaurs: Part 3|Part 3 of "Invasion of the Dinosaurs".|The Doctor (Third Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart
+11||Invasion of the Dinosaurs: Part 4|Part 4 of "Invasion of the Dinosaurs".|The Doctor (Third Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart
+11||Invasion of the Dinosaurs: Part 5|Part 5 of "Invasion of the Dinosaurs".|The Doctor (Third Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart
+11||Invasion of the Dinosaurs: Part 6|Part 6 of "Invasion of the Dinosaurs".|The Doctor (Third Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart
+11||Death to the Daleks: Part 1|Part 1 of "Death to the Daleks".|The Doctor (Third Doctor);Sarah Jane Smith
+11||Death to the Daleks: Part 2|Part 2 of "Death to the Daleks".|The Doctor (Third Doctor);Sarah Jane Smith
+11||Death to the Daleks: Part 3|Part 3 of "Death to the Daleks".|The Doctor (Third Doctor);Sarah Jane Smith
+11||Death to the Daleks: Part 4|Part 4 of "Death to the Daleks".|The Doctor (Third Doctor);Sarah Jane Smith
+11||The Monster of Peladon: Part 1|Part 1 of "The Monster of Peladon".|The Doctor (Third Doctor);Sarah Jane Smith
+11||The Monster of Peladon: Part 2|Part 2 of "The Monster of Peladon".|The Doctor (Third Doctor);Sarah Jane Smith
+11||The Monster of Peladon: Part 3|Part 3 of "The Monster of Peladon".|The Doctor (Third Doctor);Sarah Jane Smith
+11||The Monster of Peladon: Part 4|Part 4 of "The Monster of Peladon".|The Doctor (Third Doctor);Sarah Jane Smith
+11||The Monster of Peladon: Part 5|Part 5 of "The Monster of Peladon".|The Doctor (Third Doctor);Sarah Jane Smith
+11||The Monster of Peladon: Part 6|Part 6 of "The Monster of Peladon".|The Doctor (Third Doctor);Sarah Jane Smith
+11||Planet of the Spiders: Part 1|Part 1 of "Planet of the Spiders".|The Doctor (Third Doctor);Sarah Jane Smith
+11||Planet of the Spiders: Part 2|Part 2 of "Planet of the Spiders".|The Doctor (Third Doctor);Sarah Jane Smith
+11||Planet of the Spiders: Part 3|Part 3 of "Planet of the Spiders".|The Doctor (Third Doctor);Sarah Jane Smith
+11||Planet of the Spiders: Part 4|Part 4 of "Planet of the Spiders".|The Doctor (Third Doctor);Sarah Jane Smith
+11||Planet of the Spiders: Part 5|Part 5 of "Planet of the Spiders".|The Doctor (Third Doctor);Sarah Jane Smith
+11||Planet of the Spiders: Part 6|Part 6 of "Planet of the Spiders".|The Doctor (Third Doctor);Sarah Jane Smith
+12||Robot: Part 1|Part 1 of "Robot".|The Doctor (Fourth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Harry Sullivan
+12||Robot: Part 2|Part 2 of "Robot".|The Doctor (Fourth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Harry Sullivan
+12||Robot: Part 3|Part 3 of "Robot".|The Doctor (Fourth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Harry Sullivan
+12||Robot: Part 4|Part 4 of "Robot".|The Doctor (Fourth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Harry Sullivan
+12||The Ark in Space: Part 1|Part 1 of "The Ark in Space".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||The Ark in Space: Part 2|Part 2 of "The Ark in Space".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||The Ark in Space: Part 3|Part 3 of "The Ark in Space".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||The Ark in Space: Part 4|Part 4 of "The Ark in Space".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||The Sontaran Experiment: Part 1|Part 1 of "The Sontaran Experiment".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||The Sontaran Experiment: Part 2|Part 2 of "The Sontaran Experiment".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||Genesis of the Daleks: Part 1|Part 1 of "Genesis of the Daleks".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||Genesis of the Daleks: Part 2|Part 2 of "Genesis of the Daleks".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||Genesis of the Daleks: Part 3|Part 3 of "Genesis of the Daleks".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||Genesis of the Daleks: Part 4|Part 4 of "Genesis of the Daleks".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||Genesis of the Daleks: Part 5|Part 5 of "Genesis of the Daleks".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||Genesis of the Daleks: Part 6|Part 6 of "Genesis of the Daleks".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||Revenge of the Cybermen: Part 1|Part 1 of "Revenge of the Cybermen".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||Revenge of the Cybermen: Part 2|Part 2 of "Revenge of the Cybermen".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||Revenge of the Cybermen: Part 3|Part 3 of "Revenge of the Cybermen".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+12||Revenge of the Cybermen: Part 4|Part 4 of "Revenge of the Cybermen".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan
+13||Terror of the Zygons: Part 1|Part 1 of "Terror of the Zygons".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan;Brigadier Lethbridge-Stewart
+13||Terror of the Zygons: Part 2|Part 2 of "Terror of the Zygons".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan;Brigadier Lethbridge-Stewart
+13||Terror of the Zygons: Part 3|Part 3 of "Terror of the Zygons".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan;Brigadier Lethbridge-Stewart
+13||Terror of the Zygons: Part 4|Part 4 of "Terror of the Zygons".|The Doctor (Fourth Doctor);Sarah Jane Smith;Harry Sullivan;Brigadier Lethbridge-Stewart
+13||Planet of Evil: Part 1|Part 1 of "Planet of Evil".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||Planet of Evil: Part 2|Part 2 of "Planet of Evil".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||Planet of Evil: Part 3|Part 3 of "Planet of Evil".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||Planet of Evil: Part 4|Part 4 of "Planet of Evil".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||Pyramids of Mars: Part 1|Part 1 of "Pyramids of Mars".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||Pyramids of Mars: Part 2|Part 2 of "Pyramids of Mars".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||Pyramids of Mars: Part 3|Part 3 of "Pyramids of Mars".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||Pyramids of Mars: Part 4|Part 4 of "Pyramids of Mars".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Android Invasion: Part 1|Part 1 of "The Android Invasion".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Android Invasion: Part 2|Part 2 of "The Android Invasion".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Android Invasion: Part 3|Part 3 of "The Android Invasion".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Android Invasion: Part 4|Part 4 of "The Android Invasion".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Brain of Morbius: Part 1|Part 1 of "The Brain of Morbius".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Brain of Morbius: Part 2|Part 2 of "The Brain of Morbius".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Brain of Morbius: Part 3|Part 3 of "The Brain of Morbius".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Brain of Morbius: Part 4|Part 4 of "The Brain of Morbius".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Seeds of Doom: Part 1|Part 1 of "The Seeds of Doom".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Seeds of Doom: Part 2|Part 2 of "The Seeds of Doom".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Seeds of Doom: Part 3|Part 3 of "The Seeds of Doom".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Seeds of Doom: Part 4|Part 4 of "The Seeds of Doom".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Seeds of Doom: Part 5|Part 5 of "The Seeds of Doom".|The Doctor (Fourth Doctor);Sarah Jane Smith
+13||The Seeds of Doom: Part 6|Part 6 of "The Seeds of Doom".|The Doctor (Fourth Doctor);Sarah Jane Smith
+14||The Masque of Mandragora: Part 1|Part 1 of "The Masque of Mandragora".|The Doctor (Fourth Doctor);Sarah Jane Smith
+14||The Masque of Mandragora: Part 2|Part 2 of "The Masque of Mandragora".|The Doctor (Fourth Doctor);Sarah Jane Smith
+14||The Masque of Mandragora: Part 3|Part 3 of "The Masque of Mandragora".|The Doctor (Fourth Doctor);Sarah Jane Smith
+14||The Masque of Mandragora: Part 4|Part 4 of "The Masque of Mandragora".|The Doctor (Fourth Doctor);Sarah Jane Smith
+14||The Hand of Fear: Part 1|Part 1 of "The Hand of Fear".|The Doctor (Fourth Doctor);Sarah Jane Smith
+14||The Hand of Fear: Part 2|Part 2 of "The Hand of Fear".|The Doctor (Fourth Doctor);Sarah Jane Smith
+14||The Hand of Fear: Part 3|Part 3 of "The Hand of Fear".|The Doctor (Fourth Doctor);Sarah Jane Smith
+14||The Hand of Fear: Part 4|Part 4 of "The Hand of Fear".|The Doctor (Fourth Doctor);Sarah Jane Smith
+14||The Deadly Assassin: Part 1|Part 1 of "The Deadly Assassin".|The Doctor (Fourth Doctor)
+14||The Deadly Assassin: Part 2|Part 2 of "The Deadly Assassin".|The Doctor (Fourth Doctor)
+14||The Deadly Assassin: Part 3|Part 3 of "The Deadly Assassin".|The Doctor (Fourth Doctor)
+14||The Deadly Assassin: Part 4|Part 4 of "The Deadly Assassin".|The Doctor (Fourth Doctor)
+14||The Face of Evil: Part 1|Part 1 of "The Face of Evil".|The Doctor (Fourth Doctor);Leela
+14||The Face of Evil: Part 2|Part 2 of "The Face of Evil".|The Doctor (Fourth Doctor);Leela
+14||The Face of Evil: Part 3|Part 3 of "The Face of Evil".|The Doctor (Fourth Doctor);Leela
+14||The Face of Evil: Part 4|Part 4 of "The Face of Evil".|The Doctor (Fourth Doctor);Leela
+14||The Robots of Death: Part 1|Part 1 of "The Robots of Death".|The Doctor (Fourth Doctor);Leela
+14||The Robots of Death: Part 2|Part 2 of "The Robots of Death".|The Doctor (Fourth Doctor);Leela
+14||The Robots of Death: Part 3|Part 3 of "The Robots of Death".|The Doctor (Fourth Doctor);Leela
+14||The Robots of Death: Part 4|Part 4 of "The Robots of Death".|The Doctor (Fourth Doctor);Leela
+14||The Talons of Weng-Chiang: Part 1|Part 1 of "The Talons of Weng-Chiang".|The Doctor (Fourth Doctor);Leela
+14||The Talons of Weng-Chiang: Part 2|Part 2 of "The Talons of Weng-Chiang".|The Doctor (Fourth Doctor);Leela
+14||The Talons of Weng-Chiang: Part 3|Part 3 of "The Talons of Weng-Chiang".|The Doctor (Fourth Doctor);Leela
+14||The Talons of Weng-Chiang: Part 4|Part 4 of "The Talons of Weng-Chiang".|The Doctor (Fourth Doctor);Leela
+14||The Talons of Weng-Chiang: Part 5|Part 5 of "The Talons of Weng-Chiang".|The Doctor (Fourth Doctor);Leela
+14||The Talons of Weng-Chiang: Part 6|Part 6 of "The Talons of Weng-Chiang".|The Doctor (Fourth Doctor);Leela
+15||Horror of Fang Rock: Part 1|Part 1 of "Horror of Fang Rock".|The Doctor (Fourth Doctor);Leela
+15||Horror of Fang Rock: Part 2|Part 2 of "Horror of Fang Rock".|The Doctor (Fourth Doctor);Leela
+15||Horror of Fang Rock: Part 3|Part 3 of "Horror of Fang Rock".|The Doctor (Fourth Doctor);Leela
+15||Horror of Fang Rock: Part 4|Part 4 of "Horror of Fang Rock".|The Doctor (Fourth Doctor);Leela
+15||The Invisible Enemy: Part 1|Part 1 of "The Invisible Enemy".|The Doctor (Fourth Doctor);Leela;K9
+15||The Invisible Enemy: Part 2|Part 2 of "The Invisible Enemy".|The Doctor (Fourth Doctor);Leela;K9
+15||The Invisible Enemy: Part 3|Part 3 of "The Invisible Enemy".|The Doctor (Fourth Doctor);Leela;K9
+15||The Invisible Enemy: Part 4|Part 4 of "The Invisible Enemy".|The Doctor (Fourth Doctor);Leela;K9
+15||Image of the Fendahl: Part 1|Part 1 of "Image of the Fendahl".|The Doctor (Fourth Doctor);Leela;K9
+15||Image of the Fendahl: Part 2|Part 2 of "Image of the Fendahl".|The Doctor (Fourth Doctor);Leela;K9
+15||Image of the Fendahl: Part 3|Part 3 of "Image of the Fendahl".|The Doctor (Fourth Doctor);Leela;K9
+15||Image of the Fendahl: Part 4|Part 4 of "Image of the Fendahl".|The Doctor (Fourth Doctor);Leela;K9
+15||The Sun Makers: Part 1|Part 1 of "The Sun Makers".|The Doctor (Fourth Doctor);Leela;K9
+15||The Sun Makers: Part 2|Part 2 of "The Sun Makers".|The Doctor (Fourth Doctor);Leela;K9
+15||The Sun Makers: Part 3|Part 3 of "The Sun Makers".|The Doctor (Fourth Doctor);Leela;K9
+15||The Sun Makers: Part 4|Part 4 of "The Sun Makers".|The Doctor (Fourth Doctor);Leela;K9
+15||Underworld: Part 1|Part 1 of "Underworld".|The Doctor (Fourth Doctor);Leela;K9
+15||Underworld: Part 2|Part 2 of "Underworld".|The Doctor (Fourth Doctor);Leela;K9
+15||Underworld: Part 3|Part 3 of "Underworld".|The Doctor (Fourth Doctor);Leela;K9
+15||Underworld: Part 4|Part 4 of "Underworld".|The Doctor (Fourth Doctor);Leela;K9
+15||The Invasion of Time: Part 1|Part 1 of "The Invasion of Time".|The Doctor (Fourth Doctor);Leela;K9
+15||The Invasion of Time: Part 2|Part 2 of "The Invasion of Time".|The Doctor (Fourth Doctor);Leela;K9
+15||The Invasion of Time: Part 3|Part 3 of "The Invasion of Time".|The Doctor (Fourth Doctor);Leela;K9
+15||The Invasion of Time: Part 4|Part 4 of "The Invasion of Time".|The Doctor (Fourth Doctor);Leela;K9
+15||The Invasion of Time: Part 5|Part 5 of "The Invasion of Time".|The Doctor (Fourth Doctor);Leela;K9
+15||The Invasion of Time: Part 6|Part 6 of "The Invasion of Time".|The Doctor (Fourth Doctor);Leela;K9
+16||The Ribos Operation: Part 1|Part 1 of "The Ribos Operation".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Ribos Operation: Part 2|Part 2 of "The Ribos Operation".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Ribos Operation: Part 3|Part 3 of "The Ribos Operation".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Ribos Operation: Part 4|Part 4 of "The Ribos Operation".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Pirate Planet: Part 1|Part 1 of "The Pirate Planet".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Pirate Planet: Part 2|Part 2 of "The Pirate Planet".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Pirate Planet: Part 3|Part 3 of "The Pirate Planet".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Pirate Planet: Part 4|Part 4 of "The Pirate Planet".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Stones of Blood: Part 1|Part 1 of "The Stones of Blood".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Stones of Blood: Part 2|Part 2 of "The Stones of Blood".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Stones of Blood: Part 3|Part 3 of "The Stones of Blood".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Stones of Blood: Part 4|Part 4 of "The Stones of Blood".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Androids of Tara: Part 1|Part 1 of "The Androids of Tara".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Androids of Tara: Part 2|Part 2 of "The Androids of Tara".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Androids of Tara: Part 3|Part 3 of "The Androids of Tara".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Androids of Tara: Part 4|Part 4 of "The Androids of Tara".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Power of Kroll: Part 1|Part 1 of "The Power of Kroll".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Power of Kroll: Part 2|Part 2 of "The Power of Kroll".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Power of Kroll: Part 3|Part 3 of "The Power of Kroll".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Power of Kroll: Part 4|Part 4 of "The Power of Kroll".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Armageddon Factor: Part 1|Part 1 of "The Armageddon Factor".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Armageddon Factor: Part 2|Part 2 of "The Armageddon Factor".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Armageddon Factor: Part 3|Part 3 of "The Armageddon Factor".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Armageddon Factor: Part 4|Part 4 of "The Armageddon Factor".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Armageddon Factor: Part 5|Part 5 of "The Armageddon Factor".|The Doctor (Fourth Doctor);Romana I;K9
+16||The Armageddon Factor: Part 6|Part 6 of "The Armageddon Factor".|The Doctor (Fourth Doctor);Romana I;K9
+17||Destiny of the Daleks: Part 1|Part 1 of "Destiny of the Daleks".|The Doctor (Fourth Doctor);Romana II;K9
+17||Destiny of the Daleks: Part 2|Part 2 of "Destiny of the Daleks".|The Doctor (Fourth Doctor);Romana II;K9
+17||Destiny of the Daleks: Part 3|Part 3 of "Destiny of the Daleks".|The Doctor (Fourth Doctor);Romana II;K9
+17||Destiny of the Daleks: Part 4|Part 4 of "Destiny of the Daleks".|The Doctor (Fourth Doctor);Romana II;K9
+17||City of Death: Part 1|Part 1 of "City of Death".|The Doctor (Fourth Doctor);Romana II;K9
+17||City of Death: Part 2|Part 2 of "City of Death".|The Doctor (Fourth Doctor);Romana II;K9
+17||City of Death: Part 3|Part 3 of "City of Death".|The Doctor (Fourth Doctor);Romana II;K9
+17||City of Death: Part 4|Part 4 of "City of Death".|The Doctor (Fourth Doctor);Romana II;K9
+17||The Creature from the Pit: Part 1|Part 1 of "The Creature from the Pit".|The Doctor (Fourth Doctor);Romana II;K9
+17||The Creature from the Pit: Part 2|Part 2 of "The Creature from the Pit".|The Doctor (Fourth Doctor);Romana II;K9
+17||The Creature from the Pit: Part 3|Part 3 of "The Creature from the Pit".|The Doctor (Fourth Doctor);Romana II;K9
+17||The Creature from the Pit: Part 4|Part 4 of "The Creature from the Pit".|The Doctor (Fourth Doctor);Romana II;K9
+17||Nightmare of Eden: Part 1|Part 1 of "Nightmare of Eden".|The Doctor (Fourth Doctor);Romana II;K9
+17||Nightmare of Eden: Part 2|Part 2 of "Nightmare of Eden".|The Doctor (Fourth Doctor);Romana II;K9
+17||Nightmare of Eden: Part 3|Part 3 of "Nightmare of Eden".|The Doctor (Fourth Doctor);Romana II;K9
+17||Nightmare of Eden: Part 4|Part 4 of "Nightmare of Eden".|The Doctor (Fourth Doctor);Romana II;K9
+17||The Horns of Nimon: Part 1|Part 1 of "The Horns of Nimon".|The Doctor (Fourth Doctor);Romana II;K9
+17||The Horns of Nimon: Part 2|Part 2 of "The Horns of Nimon".|The Doctor (Fourth Doctor);Romana II;K9
+17||The Horns of Nimon: Part 3|Part 3 of "The Horns of Nimon".|The Doctor (Fourth Doctor);Romana II;K9
+17||The Horns of Nimon: Part 4|Part 4 of "The Horns of Nimon".|The Doctor (Fourth Doctor);Romana II;K9
+17||Shada: Part 1|Part 1 of "Shada".|The Doctor (Fourth Doctor);Romana II;K9
+17||Shada: Part 2|Part 2 of "Shada".|The Doctor (Fourth Doctor);Romana II;K9
+17||Shada: Part 3|Part 3 of "Shada".|The Doctor (Fourth Doctor);Romana II;K9
+17||Shada: Part 4|Part 4 of "Shada".|The Doctor (Fourth Doctor);Romana II;K9
+17||Shada: Part 5|Part 5 of "Shada".|The Doctor (Fourth Doctor);Romana II;K9
+17||Shada: Part 6|Part 6 of "Shada".|The Doctor (Fourth Doctor);Romana II;K9
+18||The Leisure Hive: Part 1|Part 1 of "The Leisure Hive".|The Doctor (Fourth Doctor);Romana II;K9
+18||The Leisure Hive: Part 2|Part 2 of "The Leisure Hive".|The Doctor (Fourth Doctor);Romana II;K9
+18||The Leisure Hive: Part 3|Part 3 of "The Leisure Hive".|The Doctor (Fourth Doctor);Romana II;K9
+18||The Leisure Hive: Part 4|Part 4 of "The Leisure Hive".|The Doctor (Fourth Doctor);Romana II;K9
+18||Meglos: Part 1|Part 1 of "Meglos".|The Doctor (Fourth Doctor);Romana II;K9
+18||Meglos: Part 2|Part 2 of "Meglos".|The Doctor (Fourth Doctor);Romana II;K9
+18||Meglos: Part 3|Part 3 of "Meglos".|The Doctor (Fourth Doctor);Romana II;K9
+18||Meglos: Part 4|Part 4 of "Meglos".|The Doctor (Fourth Doctor);Romana II;K9
+18||Full Circle: Part 1|Part 1 of "Full Circle".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||Full Circle: Part 2|Part 2 of "Full Circle".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||Full Circle: Part 3|Part 3 of "Full Circle".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||Full Circle: Part 4|Part 4 of "Full Circle".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||State of Decay: Part 1|Part 1 of "State of Decay".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||State of Decay: Part 2|Part 2 of "State of Decay".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||State of Decay: Part 3|Part 3 of "State of Decay".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||State of Decay: Part 4|Part 4 of "State of Decay".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||Warriors' Gate: Part 1|Part 1 of "Warriors' Gate".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||Warriors' Gate: Part 2|Part 2 of "Warriors' Gate".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||Warriors' Gate: Part 3|Part 3 of "Warriors' Gate".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||Warriors' Gate: Part 4|Part 4 of "Warriors' Gate".|The Doctor (Fourth Doctor);Romana II;K9;Adric
+18||The Keeper of Traken: Part 1|Part 1 of "The Keeper of Traken".|The Doctor (Fourth Doctor);Adric;Nyssa
+18||The Keeper of Traken: Part 2|Part 2 of "The Keeper of Traken".|The Doctor (Fourth Doctor);Adric;Nyssa
+18||The Keeper of Traken: Part 3|Part 3 of "The Keeper of Traken".|The Doctor (Fourth Doctor);Adric;Nyssa
+18||The Keeper of Traken: Part 4|Part 4 of "The Keeper of Traken".|The Doctor (Fourth Doctor);Adric;Nyssa
+18||Logopolis: Part 1|Part 1 of "Logopolis".|The Doctor (Fourth Doctor);Adric;Nyssa;Tegan Jovanka
+18||Logopolis: Part 2|Part 2 of "Logopolis".|The Doctor (Fourth Doctor);Adric;Nyssa;Tegan Jovanka
+18||Logopolis: Part 3|Part 3 of "Logopolis".|The Doctor (Fourth Doctor);Adric;Nyssa;Tegan Jovanka
+18||Logopolis: Part 4|Part 4 of "Logopolis".|The Doctor (Fourth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Castrovalva: Part 1|Part 1 of "Castrovalva".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Castrovalva: Part 2|Part 2 of "Castrovalva".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Castrovalva: Part 3|Part 3 of "Castrovalva".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Castrovalva: Part 4|Part 4 of "Castrovalva".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Four to Doomsday: Part 1|Part 1 of "Four to Doomsday".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Four to Doomsday: Part 2|Part 2 of "Four to Doomsday".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Four to Doomsday: Part 3|Part 3 of "Four to Doomsday".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Four to Doomsday: Part 4|Part 4 of "Four to Doomsday".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Kinda: Part 1|Part 1 of "Kinda".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Kinda: Part 2|Part 2 of "Kinda".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Kinda: Part 3|Part 3 of "Kinda".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Kinda: Part 4|Part 4 of "Kinda".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||The Visitation: Part 1|Part 1 of "The Visitation".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||The Visitation: Part 2|Part 2 of "The Visitation".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||The Visitation: Part 3|Part 3 of "The Visitation".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||The Visitation: Part 4|Part 4 of "The Visitation".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Black Orchid: Part 1|Part 1 of "Black Orchid".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Black Orchid: Part 2|Part 2 of "Black Orchid".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Earthshock: Part 1|Part 1 of "Earthshock".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Earthshock: Part 2|Part 2 of "Earthshock".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Earthshock: Part 3|Part 3 of "Earthshock".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Earthshock: Part 4|Part 4 of "Earthshock".|The Doctor (Fifth Doctor);Adric;Nyssa;Tegan Jovanka
+19||Time-Flight: Part 1|Part 1 of "Time-Flight".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+19||Time-Flight: Part 2|Part 2 of "Time-Flight".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+19||Time-Flight: Part 3|Part 3 of "Time-Flight".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+19||Time-Flight: Part 4|Part 4 of "Time-Flight".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+20||Arc of Infinity: Part 1|Part 1 of "Arc of Infinity".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+20||Arc of Infinity: Part 2|Part 2 of "Arc of Infinity".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+20||Arc of Infinity: Part 3|Part 3 of "Arc of Infinity".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+20||Arc of Infinity: Part 4|Part 4 of "Arc of Infinity".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+20||Snakedance: Part 1|Part 1 of "Snakedance".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+20||Snakedance: Part 2|Part 2 of "Snakedance".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+20||Snakedance: Part 3|Part 3 of "Snakedance".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+20||Snakedance: Part 4|Part 4 of "Snakedance".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka
+20||Mawdryn Undead: Part 1|Part 1 of "Mawdryn Undead".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka;Vislor Turlough
+20||Mawdryn Undead: Part 2|Part 2 of "Mawdryn Undead".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka;Vislor Turlough
+20||Mawdryn Undead: Part 3|Part 3 of "Mawdryn Undead".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka;Vislor Turlough
+20||Mawdryn Undead: Part 4|Part 4 of "Mawdryn Undead".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka;Vislor Turlough
+20||Terminus: Part 1|Part 1 of "Terminus".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka;Vislor Turlough
+20||Terminus: Part 2|Part 2 of "Terminus".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka;Vislor Turlough
+20||Terminus: Part 3|Part 3 of "Terminus".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka;Vislor Turlough
+20||Terminus: Part 4|Part 4 of "Terminus".|The Doctor (Fifth Doctor);Nyssa;Tegan Jovanka;Vislor Turlough
+20||Enlightenment: Part 1|Part 1 of "Enlightenment".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+20||Enlightenment: Part 2|Part 2 of "Enlightenment".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+20||Enlightenment: Part 3|Part 3 of "Enlightenment".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+20||Enlightenment: Part 4|Part 4 of "Enlightenment".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+20||The King's Demons: Part 1|Part 1 of "The King's Demons".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+20||The King's Demons: Part 2|Part 2 of "The King's Demons".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+20||The Five Doctors: Part 1|Part 1 of "The Five Doctors".|The Doctor (First Doctor);The Doctor (Second Doctor);The Doctor (Third Doctor);The Doctor (Fourth Doctor);The Doctor (Fifth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Tegan Jovanka;Vislor Turlough
+20||The Five Doctors: Part 2|Part 2 of "The Five Doctors".|The Doctor (First Doctor);The Doctor (Second Doctor);The Doctor (Third Doctor);The Doctor (Fourth Doctor);The Doctor (Fifth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Tegan Jovanka;Vislor Turlough
+20||The Five Doctors: Part 3|Part 3 of "The Five Doctors".|The Doctor (First Doctor);The Doctor (Second Doctor);The Doctor (Third Doctor);The Doctor (Fourth Doctor);The Doctor (Fifth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Tegan Jovanka;Vislor Turlough
+20||The Five Doctors: Part 4|Part 4 of "The Five Doctors".|The Doctor (First Doctor);The Doctor (Second Doctor);The Doctor (Third Doctor);The Doctor (Fourth Doctor);The Doctor (Fifth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Tegan Jovanka;Vislor Turlough
+20||The Five Doctors: Part 5|Part 5 of "The Five Doctors".|The Doctor (First Doctor);The Doctor (Second Doctor);The Doctor (Third Doctor);The Doctor (Fourth Doctor);The Doctor (Fifth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Tegan Jovanka;Vislor Turlough
+20||The Five Doctors: Part 6|Part 6 of "The Five Doctors".|The Doctor (First Doctor);The Doctor (Second Doctor);The Doctor (Third Doctor);The Doctor (Fourth Doctor);The Doctor (Fifth Doctor);Sarah Jane Smith;Brigadier Lethbridge-Stewart;Tegan Jovanka;Vislor Turlough
+21||Warriors of the Deep: Part 1|Part 1 of "Warriors of the Deep".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||Warriors of the Deep: Part 2|Part 2 of "Warriors of the Deep".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||Warriors of the Deep: Part 3|Part 3 of "Warriors of the Deep".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||Warriors of the Deep: Part 4|Part 4 of "Warriors of the Deep".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||The Awakening: Part 1|Part 1 of "The Awakening".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||The Awakening: Part 2|Part 2 of "The Awakening".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||Frontios: Part 1|Part 1 of "Frontios".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||Frontios: Part 2|Part 2 of "Frontios".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||Frontios: Part 3|Part 3 of "Frontios".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||Frontios: Part 4|Part 4 of "Frontios".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||Resurrection of the Daleks: Part 1|Part 1 of "Resurrection of the Daleks".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||Resurrection of the Daleks: Part 2|Part 2 of "Resurrection of the Daleks".|The Doctor (Fifth Doctor);Tegan Jovanka;Vislor Turlough
+21||Planet of Fire: Part 1|Part 1 of "Planet of Fire".|The Doctor (Fifth Doctor);Vislor Turlough;Peri Brown
+21||Planet of Fire: Part 2|Part 2 of "Planet of Fire".|The Doctor (Fifth Doctor);Vislor Turlough;Peri Brown
+21||Planet of Fire: Part 3|Part 3 of "Planet of Fire".|The Doctor (Fifth Doctor);Vislor Turlough;Peri Brown
+21||Planet of Fire: Part 4|Part 4 of "Planet of Fire".|The Doctor (Fifth Doctor);Vislor Turlough;Peri Brown
+21||The Caves of Androzani: Part 1|Part 1 of "The Caves of Androzani".|The Doctor (Fifth Doctor);Peri Brown
+21||The Caves of Androzani: Part 2|Part 2 of "The Caves of Androzani".|The Doctor (Fifth Doctor);Peri Brown
+21||The Caves of Androzani: Part 3|Part 3 of "The Caves of Androzani".|The Doctor (Fifth Doctor);Peri Brown
+21||The Caves of Androzani: Part 4|Part 4 of "The Caves of Androzani".|The Doctor (Fifth Doctor);Peri Brown
+21||The Twin Dilemma: Part 1|Part 1 of "The Twin Dilemma".|The Doctor (Sixth Doctor);Peri Brown
+21||The Twin Dilemma: Part 2|Part 2 of "The Twin Dilemma".|The Doctor (Sixth Doctor);Peri Brown
+21||The Twin Dilemma: Part 3|Part 3 of "The Twin Dilemma".|The Doctor (Sixth Doctor);Peri Brown
+21||The Twin Dilemma: Part 4|Part 4 of "The Twin Dilemma".|The Doctor (Sixth Doctor);Peri Brown
+22||Attack of the Cybermen: Part 1|Part 1 of "Attack of the Cybermen".|The Doctor (Sixth Doctor);Peri Brown
+22||Attack of the Cybermen: Part 2|Part 2 of "Attack of the Cybermen".|The Doctor (Sixth Doctor);Peri Brown
+22||Vengeance on Varos: Part 1|Part 1 of "Vengeance on Varos".|The Doctor (Sixth Doctor);Peri Brown
+22||Vengeance on Varos: Part 2|Part 2 of "Vengeance on Varos".|The Doctor (Sixth Doctor);Peri Brown
+22||The Mark of the Rani: Part 1|Part 1 of "The Mark of the Rani".|The Doctor (Sixth Doctor);Peri Brown
+22||The Mark of the Rani: Part 2|Part 2 of "The Mark of the Rani".|The Doctor (Sixth Doctor);Peri Brown
+22||The Two Doctors: Part 1|Part 1 of "The Two Doctors".|The Doctor (Sixth Doctor);Peri Brown;The Doctor (Second Doctor);Jamie McCrimmon
+22||The Two Doctors: Part 2|Part 2 of "The Two Doctors".|The Doctor (Sixth Doctor);Peri Brown;The Doctor (Second Doctor);Jamie McCrimmon
+22||The Two Doctors: Part 3|Part 3 of "The Two Doctors".|The Doctor (Sixth Doctor);Peri Brown;The Doctor (Second Doctor);Jamie McCrimmon
+22||Timelash: Part 1|Part 1 of "Timelash".|The Doctor (Sixth Doctor);Peri Brown
+22||Timelash: Part 2|Part 2 of "Timelash".|The Doctor (Sixth Doctor);Peri Brown
+22||Revelation of the Daleks: Part 1|Part 1 of "Revelation of the Daleks".|The Doctor (Sixth Doctor);Peri Brown
+22||Revelation of the Daleks: Part 2|Part 2 of "Revelation of the Daleks".|The Doctor (Sixth Doctor);Peri Brown
+23||The Mysterious Planet: Part 1|Part 1 of "The Mysterious Planet".|The Doctor (Sixth Doctor);Peri Brown
+23||The Mysterious Planet: Part 2|Part 2 of "The Mysterious Planet".|The Doctor (Sixth Doctor);Peri Brown
+23||The Mysterious Planet: Part 3|Part 3 of "The Mysterious Planet".|The Doctor (Sixth Doctor);Peri Brown
+23||The Mysterious Planet: Part 4|Part 4 of "The Mysterious Planet".|The Doctor (Sixth Doctor);Peri Brown
+23||Mindwarp: Part 1|Part 1 of "Mindwarp".|The Doctor (Sixth Doctor);Peri Brown
+23||Mindwarp: Part 2|Part 2 of "Mindwarp".|The Doctor (Sixth Doctor);Peri Brown
+23||Mindwarp: Part 3|Part 3 of "Mindwarp".|The Doctor (Sixth Doctor);Peri Brown
+23||Mindwarp: Part 4|Part 4 of "Mindwarp".|The Doctor (Sixth Doctor);Peri Brown
+23||Terror of the Vervoids: Part 1|Part 1 of "Terror of the Vervoids".|The Doctor (Sixth Doctor);Mel Bush
+23||Terror of the Vervoids: Part 2|Part 2 of "Terror of the Vervoids".|The Doctor (Sixth Doctor);Mel Bush
+23||Terror of the Vervoids: Part 3|Part 3 of "Terror of the Vervoids".|The Doctor (Sixth Doctor);Mel Bush
+23||Terror of the Vervoids: Part 4|Part 4 of "Terror of the Vervoids".|The Doctor (Sixth Doctor);Mel Bush
+23||The Ultimate Foe: Part 1|Part 1 of "The Ultimate Foe".|The Doctor (Sixth Doctor);Mel Bush
+23||The Ultimate Foe: Part 2|Part 2 of "The Ultimate Foe".|The Doctor (Sixth Doctor);Mel Bush
+24||Time and the Rani: Part 1|Part 1 of "Time and the Rani".|The Doctor (Seventh Doctor);Mel Bush
+24||Time and the Rani: Part 2|Part 2 of "Time and the Rani".|The Doctor (Seventh Doctor);Mel Bush
+24||Time and the Rani: Part 3|Part 3 of "Time and the Rani".|The Doctor (Seventh Doctor);Mel Bush
+24||Time and the Rani: Part 4|Part 4 of "Time and the Rani".|The Doctor (Seventh Doctor);Mel Bush
+24||Paradise Towers: Part 1|Part 1 of "Paradise Towers".|The Doctor (Seventh Doctor);Mel Bush
+24||Paradise Towers: Part 2|Part 2 of "Paradise Towers".|The Doctor (Seventh Doctor);Mel Bush
+24||Paradise Towers: Part 3|Part 3 of "Paradise Towers".|The Doctor (Seventh Doctor);Mel Bush
+24||Paradise Towers: Part 4|Part 4 of "Paradise Towers".|The Doctor (Seventh Doctor);Mel Bush
+24||Delta and the Bannermen: Part 1|Part 1 of "Delta and the Bannermen".|The Doctor (Seventh Doctor);Mel Bush
+24||Delta and the Bannermen: Part 2|Part 2 of "Delta and the Bannermen".|The Doctor (Seventh Doctor);Mel Bush
+24||Delta and the Bannermen: Part 3|Part 3 of "Delta and the Bannermen".|The Doctor (Seventh Doctor);Mel Bush
+24||Dragonfire: Part 1|Part 1 of "Dragonfire".|The Doctor (Seventh Doctor);Mel Bush;Ace
+24||Dragonfire: Part 2|Part 2 of "Dragonfire".|The Doctor (Seventh Doctor);Mel Bush;Ace
+24||Dragonfire: Part 3|Part 3 of "Dragonfire".|The Doctor (Seventh Doctor);Mel Bush;Ace
+25||Remembrance of the Daleks: Part 1|Part 1 of "Remembrance of the Daleks".|The Doctor (Seventh Doctor);Ace
+25||Remembrance of the Daleks: Part 2|Part 2 of "Remembrance of the Daleks".|The Doctor (Seventh Doctor);Ace
+25||Remembrance of the Daleks: Part 3|Part 3 of "Remembrance of the Daleks".|The Doctor (Seventh Doctor);Ace
+25||Remembrance of the Daleks: Part 4|Part 4 of "Remembrance of the Daleks".|The Doctor (Seventh Doctor);Ace
+25||The Happiness Patrol: Part 1|Part 1 of "The Happiness Patrol".|The Doctor (Seventh Doctor);Ace
+25||The Happiness Patrol: Part 2|Part 2 of "The Happiness Patrol".|The Doctor (Seventh Doctor);Ace
+25||The Happiness Patrol: Part 3|Part 3 of "The Happiness Patrol".|The Doctor (Seventh Doctor);Ace
+25||Silver Nemesis: Part 1|Part 1 of "Silver Nemesis".|The Doctor (Seventh Doctor);Ace
+25||Silver Nemesis: Part 2|Part 2 of "Silver Nemesis".|The Doctor (Seventh Doctor);Ace
+25||Silver Nemesis: Part 3|Part 3 of "Silver Nemesis".|The Doctor (Seventh Doctor);Ace
+25||The Greatest Show in the Galaxy: Part 1|Part 1 of "The Greatest Show in the Galaxy".|The Doctor (Seventh Doctor);Ace
+25||The Greatest Show in the Galaxy: Part 2|Part 2 of "The Greatest Show in the Galaxy".|The Doctor (Seventh Doctor);Ace
+25||The Greatest Show in the Galaxy: Part 3|Part 3 of "The Greatest Show in the Galaxy".|The Doctor (Seventh Doctor);Ace
+25||The Greatest Show in the Galaxy: Part 4|Part 4 of "The Greatest Show in the Galaxy".|The Doctor (Seventh Doctor);Ace
+26||Battlefield: Part 1|Part 1 of "Battlefield".|The Doctor (Seventh Doctor);Ace;Brigadier Lethbridge-Stewart
+26||Battlefield: Part 2|Part 2 of "Battlefield".|The Doctor (Seventh Doctor);Ace;Brigadier Lethbridge-Stewart
+26||Battlefield: Part 3|Part 3 of "Battlefield".|The Doctor (Seventh Doctor);Ace;Brigadier Lethbridge-Stewart
+26||Battlefield: Part 4|Part 4 of "Battlefield".|The Doctor (Seventh Doctor);Ace;Brigadier Lethbridge-Stewart
+26||Ghost Light: Part 1|Part 1 of "Ghost Light".|The Doctor (Seventh Doctor);Ace
+26||Ghost Light: Part 2|Part 2 of "Ghost Light".|The Doctor (Seventh Doctor);Ace
+26||Ghost Light: Part 3|Part 3 of "Ghost Light".|The Doctor (Seventh Doctor);Ace
+26||The Curse of Fenric: Part 1|Part 1 of "The Curse of Fenric".|The Doctor (Seventh Doctor);Ace
+26||The Curse of Fenric: Part 2|Part 2 of "The Curse of Fenric".|The Doctor (Seventh Doctor);Ace
+26||The Curse of Fenric: Part 3|Part 3 of "The Curse of Fenric".|The Doctor (Seventh Doctor);Ace
+26||The Curse of Fenric: Part 4|Part 4 of "The Curse of Fenric".|The Doctor (Seventh Doctor);Ace
+26||Survival: Part 1|Part 1 of "Survival".|The Doctor (Seventh Doctor);Ace
+26||Survival: Part 2|Part 2 of "Survival".|The Doctor (Seventh Doctor);Ace
+26||Survival: Part 3|Part 3 of "Survival".|The Doctor (Seventh Doctor);Ace
 EOF
 
 echo "Ensuring known episodes..."
