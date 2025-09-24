@@ -45,6 +45,8 @@ The server reads a handful of environment variables so you can mirror the produc
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | _unset_ | If both are provided, `/admin` is protected with HTTP Basic Auth. |
 | `API_TOKEN` | _unset_ | When set, all JSON/GraphQL endpoints require the token via the `x-api-token` header or a `Bearer` authorization header. |
 
+> `/deployment-version` is intentionally left unauthenticated so load balancers and uptime checks can read the running build metadata even when the rest of the API is locked down with `API_TOKEN`.
+
 **Background job retention**
 
 | Variable | Default | Description |
@@ -81,7 +83,7 @@ npm run docker:build -- --push
 ```
 By default the helper script builds an x86_64 image locally (loaded into your Docker daemon). Pass `--push` to publish the multi-architecture image set.
 
-Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.4.1`) plus a numeric suffix such as `1.4.1.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
+Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.5.0`) plus a numeric suffix such as `1.5.0.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
 
 ### Release automation
 
@@ -195,6 +197,17 @@ curl -s -X POST "$API/graphql" \
 curl -s -X POST "$API/graphql" \
   -H 'Content-Type: application/json' \
   -d '{"query":"{ show(id:1) { title seasons { season_number episodes { title } } } }"}' | jq .
+```
+
+### Pagination on list endpoints
+All collection `GET` endpoints accept optional `limit` and `offset` query parameters in addition to the existing `start`, `end`, and `include` filters. Use `limit` to cap the number of rows returned and `offset` (requires `limit`) to skip a number of rows before results begin.
+
+```bash
+# Fetch five shows starting at the sixth row, ordered the same way as the default response
+curl -s "$API/shows?limit=5&offset=5" | jq .
+
+# Page through characters linked to a specific episode
+curl -s "$API/episodes/1/characters?limit=10&offset=10" | jq .
 ```
 
 ### Actors

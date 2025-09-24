@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2025-10-21
+### Added
+- Optional `limit` and `offset` pagination parameters across all collection `GET` endpoints, with matching OpenAPI/README updates so clients can page large datasets predictably.
+
+### Changed
+- `/deployment-version` now bypasses API token enforcement so health checks and load balancers can read the running build metadata without credentials.
+- Classic Doctor Who seed data now ships the full canonical episode list with proper titles, descriptions, and featured characters instead of placeholder entries.
+- Bumped package, Docker, Helm, Kubernetes, and Postman versions to 1.5.0.
+
 ## [1.4.1] - 2025-10-14
 ### Changed
 - Explorer UI now uses cascading dropdowns for shows, seasons, episodes, and characters, providing clearer navigation and better keyboard accessibility.
