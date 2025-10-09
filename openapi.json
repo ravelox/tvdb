@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "TV Shows API",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "description": "CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs."
   },
   "servers": [
@@ -266,6 +266,19 @@
         "responses": {
           "200": {
             "description": "Database dump"
+          }
+        }
+      }
+    },
+    "/admin/database-import": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Import database dump (upsert)",
+        "responses": {
+          "200": {
+            "description": "Import completed"
           }
         }
       }

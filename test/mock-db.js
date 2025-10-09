@@ -31,8 +31,8 @@ const stub = {
       end: async () => {},
     };
   },
-  createPool: () => ({
-    execute: async (sql, params) => {
+  createPool: () => {
+    const execute = async (sql, params) => {
       const upper = sql.trim().toUpperCase();
       if (upper.includes('SELECT 1 AS OK')) {
         return [[{ ok: 1 }], []];
@@ -44,16 +44,28 @@ const stub = {
         return [{ affectedRows: 0 }];
       }
       return [[]];
-    },
-    query: async (sql, params) => {
+    };
+    const query = async (sql, params) => {
       const upper = sql.trim().toUpperCase();
       if (upper.includes('SELECT 1 AS OK')) {
         return [[{ ok: 1 }], []];
       }
       return [[]];
-    },
-    end: async () => {},
-  }),
+    };
+    return {
+      execute,
+      query,
+      end: async () => {},
+      getConnection: async () => ({
+        execute,
+        query,
+        beginTransaction: async () => {},
+        commit: async () => {},
+        rollback: async () => {},
+        release: () => {},
+      }),
+    };
+  },
 };
 
 const originalLoad = Module._load;

@@ -2,7 +2,7 @@
   "info": {
     "name": "TV Shows API",
     "description": "CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs.",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -52,6 +52,14 @@
             "method": "GET",
             "url": "{{baseUrl}}/admin/database-dump",
             "description": "Export entire database contents"
+          }
+        },
+        {
+          "name": "POST /admin/database-import",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/database-import",
+            "description": "Import database dump (upsert)"
           }
         }
       ]

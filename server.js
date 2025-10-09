@@ -335,6 +335,93 @@ function withPagination(sql, params, pagination) {
   };
 }
 
+function formatDateTime(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+}
+
+function formatDateOnly(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
+
+function toSqlTimestamp(value, fieldPath) {
+  if (value == null || value === '') return null;
+  if (value instanceof Date) return formatDateTime(value);
+  if (typeof value === 'number') {
+    const fromNumber = new Date(value);
+    if (!Number.isNaN(fromNumber.getTime())) return formatDateTime(fromNumber);
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(trimmed)) return trimmed;
+    const normalized = trimmed.includes(' ') && !trimmed.includes('T') ? trimmed.replace(' ', 'T') : trimmed;
+    const parsed = new Date(normalized);
+    if (!Number.isNaN(parsed.getTime())) return formatDateTime(parsed);
+    const fallback = new Date(trimmed);
+    if (!Number.isNaN(fallback.getTime())) return formatDateTime(fallback);
+  }
+  throw exposedError(`${fieldPath} must be a valid timestamp`);
+}
+
+function toSqlDate(value, fieldPath) {
+  if (value == null || value === '') return null;
+  if (value instanceof Date) return formatDateOnly(value);
+  if (typeof value === 'number') {
+    const fromNumber = new Date(value);
+    if (!Number.isNaN(fromNumber.getTime())) return formatDateOnly(fromNumber);
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const normalized = trimmed.includes(' ') && !trimmed.includes('T') ? trimmed.replace(' ', 'T') : trimmed;
+    const parsed = new Date(normalized);
+    if (!Number.isNaN(parsed.getTime())) return formatDateOnly(parsed);
+    const fallback = new Date(trimmed);
+    if (!Number.isNaN(fallback.getTime())) return formatDateOnly(fallback);
+  }
+  throw exposedError(`${fieldPath} must be a valid ISO date (YYYY-MM-DD)`);
+}
+
+function toPositiveInt(value, fieldPath) {
+  const num = Number(value);
+  if (!Number.isInteger(num) || num <= 0) {
+    throw exposedError(`${fieldPath} must be a positive integer`);
+  }
+  return num;
+}
+
+function toNonNegativeInt(value, fieldPath) {
+  const num = Number(value);
+  if (!Number.isInteger(num) || num < 0) {
+    throw exposedError(`${fieldPath} must be a non-negative integer`);
+  }
+  return num;
+}
+
+function toOptionalPositiveInt(value, fieldPath) {
+  if (value == null || value === '') return null;
+  return toPositiveInt(value, fieldPath);
+}
+
+function toOptionalInteger(value, fieldPath) {
+  if (value == null || value === '') return null;
+  const num = Number(value);
+  if (!Number.isInteger(num)) {
+    throw exposedError(`${fieldPath} must be an integer`);
+  }
+  return num;
+}
+
+function requireString(value, fieldPath) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw exposedError(`${fieldPath} is required`);
+  }
+  return value;
+}
+
 function adminAuthMiddleware(req, res, next) {
   if (!ADMIN_USERNAME || !ADMIN_PASSWORD) return next();
   const header = req.headers.authorization || '';
@@ -394,6 +481,7 @@ const openapiBase = {
     '/init': { post: { tags:['health'], summary:'Initialize DB/schema', responses:{ '200':{ description:'Initialized' } } } },
     '/admin/reset-database': { post: { tags:['admin'], summary:'Reset database schema via API', responses:{ '200':{ description:'Reset' } } } },
     '/admin/database-dump': { get: { tags:['admin'], summary:'Export entire database contents', responses:{ '200':{ description:'Database dump' } } } },
+    '/admin/database-import': { post: { tags:['admin'], summary:'Import database dump (upsert)', responses:{ '200':{ description:'Import completed' } } } },
 
     '/actors': { get:{ tags:['actors'], summary:'List actors' }, post:{ tags:['actors'], summary:'Create actor' } },
     '/actors/{id}': { get:{ tags:['actors'], summary:'Get actor' }, put:{ tags:['actors'], summary:'Update actor' }, delete:{ tags:['actors'], summary:'Delete actor' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'integer'} }] },
@@ -525,6 +613,176 @@ app.get('/admin/database-dump', asyncH(async (req, res) => {
     })
   );
   res.json(Object.fromEntries(entries));
+}));
+
+app.post('/admin/database-import', asyncH(async (req, res) => {
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return httpError(res, 400, 'body must be an object');
+  }
+  const datasets = {};
+  const expectedKeys = ['actors', 'shows', 'seasons', 'episodes', 'characters', 'episodeCharacters'];
+  for (const key of expectedKeys) {
+    const raw = req.body[key];
+    if (raw == null) {
+      datasets[key] = [];
+    } else if (!Array.isArray(raw)) {
+      return httpError(res, 400, `${key} must be an array`);
+    } else {
+      datasets[key] = raw;
+    }
+  }
+
+  const normalizeRecords = {
+    actors: (rows) => rows.map((row, index) => {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        throw exposedError(`actors[${index}] must be an object`);
+      }
+      return {
+        id: toPositiveInt(row.id, `actors[${index}].id`),
+        name: requireString(row.name, `actors[${index}].name`),
+        created_at: toSqlTimestamp(row.created_at, `actors[${index}].created_at`),
+      };
+    }),
+    shows: (rows) => rows.map((row, index) => {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        throw exposedError(`shows[${index}] must be an object`);
+      }
+      return {
+        id: toPositiveInt(row.id, `shows[${index}].id`),
+        title: requireString(row.title, `shows[${index}].title`),
+        description: row.description == null ? null : String(row.description),
+        year: toOptionalInteger(row.year, `shows[${index}].year`),
+        created_at: toSqlTimestamp(row.created_at, `shows[${index}].created_at`),
+      };
+    }),
+    seasons: (rows) => rows.map((row, index) => {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        throw exposedError(`seasons[${index}] must be an object`);
+      }
+      return {
+        id: toPositiveInt(row.id, `seasons[${index}].id`),
+        show_id: toPositiveInt(row.show_id, `seasons[${index}].show_id`),
+        season_number: toNonNegativeInt(row.season_number, `seasons[${index}].season_number`),
+        year: toOptionalInteger(row.year, `seasons[${index}].year`),
+        created_at: toSqlTimestamp(row.created_at, `seasons[${index}].created_at`),
+      };
+    }),
+    episodes: (rows) => rows.map((row, index) => {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        throw exposedError(`episodes[${index}] must be an object`);
+      }
+      return {
+        id: toPositiveInt(row.id, `episodes[${index}].id`),
+        season_id: toPositiveInt(row.season_id, `episodes[${index}].season_id`),
+        air_date: toSqlDate(row.air_date, `episodes[${index}].air_date`),
+        title: requireString(row.title, `episodes[${index}].title`),
+        description: row.description == null ? null : String(row.description),
+        created_at: toSqlTimestamp(row.created_at, `episodes[${index}].created_at`),
+      };
+    }),
+    characters: (rows) => rows.map((row, index) => {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        throw exposedError(`characters[${index}] must be an object`);
+      }
+      return {
+        id: toPositiveInt(row.id, `characters[${index}].id`),
+        show_id: toPositiveInt(row.show_id, `characters[${index}].show_id`),
+        name: requireString(row.name, `characters[${index}].name`),
+        actor_id: toOptionalPositiveInt(row.actor_id, `characters[${index}].actor_id`),
+        created_at: toSqlTimestamp(row.created_at, `characters[${index}].created_at`),
+      };
+    }),
+    episodeCharacters: (rows) => rows.map((row, index) => {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        throw exposedError(`episodeCharacters[${index}] must be an object`);
+      }
+      return {
+        id: toPositiveInt(row.id, `episodeCharacters[${index}].id`),
+        episode_id: toPositiveInt(row.episode_id, `episodeCharacters[${index}].episode_id`),
+        character_id: toPositiveInt(row.character_id, `episodeCharacters[${index}].character_id`),
+        created_at: toSqlTimestamp(row.created_at, `episodeCharacters[${index}].created_at`),
+      };
+    }),
+  };
+
+  let normalized;
+  try {
+    normalized = Object.fromEntries(
+      expectedKeys.map((key) => [key, normalizeRecords[key](datasets[key])])
+    );
+  } catch (err) {
+    if (err && err.expose) {
+      return httpError(res, 400, err.message);
+    }
+    throw err;
+  }
+
+  const counts = Object.fromEntries(
+    expectedKeys.map((key) => [key, normalized[key].length])
+  );
+
+  await runWithDbRetry(async () => {
+    const poolClient = await ensurePool();
+    const conn = await poolClient.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      for (const row of normalized.actors) {
+        await conn.execute(
+          'INSERT INTO actors (id, name, created_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name), created_at=COALESCE(VALUES(created_at), created_at)',
+          [row.id, row.name, row.created_at]
+        );
+      }
+
+      for (const row of normalized.shows) {
+        await conn.execute(
+          'INSERT INTO shows (id, title, description, year, created_at) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE title=VALUES(title), description=VALUES(description), year=VALUES(year), created_at=COALESCE(VALUES(created_at), created_at)',
+          [row.id, row.title, row.description, row.year, row.created_at]
+        );
+      }
+
+      for (const row of normalized.seasons) {
+        await conn.execute(
+          'INSERT INTO seasons (id, show_id, season_number, year, created_at) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE show_id=VALUES(show_id), season_number=VALUES(season_number), year=VALUES(year), created_at=COALESCE(VALUES(created_at), created_at)',
+          [row.id, row.show_id, row.season_number, row.year, row.created_at]
+        );
+      }
+
+      for (const row of normalized.episodes) {
+        await conn.execute(
+          'INSERT INTO episodes (id, season_id, air_date, title, description, created_at) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE season_id=VALUES(season_id), air_date=VALUES(air_date), title=VALUES(title), description=VALUES(description), created_at=COALESCE(VALUES(created_at), created_at)',
+          [row.id, row.season_id, row.air_date, row.title, row.description, row.created_at]
+        );
+      }
+
+      for (const row of normalized.characters) {
+        await conn.execute(
+          'INSERT INTO characters (id, show_id, name, actor_id, created_at) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE show_id=VALUES(show_id), name=VALUES(name), actor_id=VALUES(actor_id), created_at=COALESCE(VALUES(created_at), created_at)',
+          [row.id, row.show_id, row.name, row.actor_id, row.created_at]
+        );
+      }
+
+      for (const row of normalized.episodeCharacters) {
+        await conn.execute(
+          'INSERT INTO episode_characters (id, episode_id, character_id, created_at) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE episode_id=VALUES(episode_id), character_id=VALUES(character_id), created_at=COALESCE(VALUES(created_at), created_at)',
+          [row.id, row.episode_id, row.character_id, row.created_at]
+        );
+      }
+
+      await conn.commit();
+    } catch (err) {
+      try {
+        await conn.rollback();
+      } catch (rollbackErr) {
+        console.error('[db] rollback failed after import error', rollbackErr);
+      }
+      throw err;
+    } finally {
+      conn.release();
+    }
+  });
+
+  res.json({ status: 'imported', counts });
 }));
 
 // --------------------------- ACTORS ---------------------------

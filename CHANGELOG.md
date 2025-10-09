@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Added
+- `POST /admin/database-import` endpoint to ingest database dumps with upsert semantics so environments can be restored from exports.
+
 ## [1.6.0] - 2025-10-22
 ### Added
 - `GET /admin/database-dump` endpoint for exporting the full dataset, with matching tests, OpenAPI metadata, and Postman updates.

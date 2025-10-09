@@ -151,6 +151,65 @@ test('database administration endpoints', async (t) => {
       episodeCharacters: []
     });
   });
+
+  await t.test('POST /admin/database-import upserts payload', async () => {
+    const payload = {
+      actors: [{ id: 1, name: 'Importer', created_at: '2025-01-01T00:00:00.000Z' }],
+      shows: [{
+        id: 1,
+        title: 'Imported Show',
+        description: 'Imported description',
+        year: 2025,
+        created_at: '2025-01-02T00:00:00.000Z'
+      }],
+      seasons: [{
+        id: 1,
+        show_id: 1,
+        season_number: 1,
+        year: 2025,
+        created_at: '2025-01-03T00:00:00.000Z'
+      }],
+      episodes: [{
+        id: 1,
+        season_id: 1,
+        air_date: '2025-01-15',
+        title: 'Imported Pilot',
+        description: 'Episode description',
+        created_at: '2025-01-04T00:00:00.000Z'
+      }],
+      characters: [{
+        id: 1,
+        show_id: 1,
+        name: 'Imported Hero',
+        actor_id: 1,
+        created_at: '2025-01-05T00:00:00.000Z'
+      }],
+      episodeCharacters: [{
+        id: 1,
+        episode_id: 1,
+        character_id: 1,
+        created_at: '2025-01-06T00:00:00.000Z'
+      }]
+    };
+    const res = await fetch('http://localhost:3000/admin/database-import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.deepStrictEqual(body, {
+      status: 'imported',
+      counts: {
+        actors: 1,
+        shows: 1,
+        seasons: 1,
+        episodes: 1,
+        characters: 1,
+        episodeCharacters: 1
+      }
+    });
+  });
 });
 
 test('GET /deployment-version returns deployment metadata', async () => {
