@@ -137,6 +137,20 @@ test('database administration endpoints', async (t) => {
     });
     assert.strictEqual(res.status, 200);
   });
+
+  await t.test('GET /admin/database-dump returns full dataset', async () => {
+    const res = await fetch('http://localhost:3000/admin/database-dump');
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.deepStrictEqual(body, {
+      actors: [],
+      shows: [],
+      seasons: [],
+      episodes: [],
+      characters: [],
+      episodeCharacters: []
+    });
+  });
 });
 
 test('GET /deployment-version returns deployment metadata', async () => {
@@ -149,4 +163,3 @@ test('GET /deployment-version returns deployment metadata', async () => {
     packageVersion: pkg.version
   });
 });
-

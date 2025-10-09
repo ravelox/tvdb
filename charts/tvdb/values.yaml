@@ -2,7 +2,7 @@ namespace: tvdb
 app:
   image:
     repository: ravelox/tvdb
-    tag: "latest"
+    tag: "1.6.0.13"
     pullPolicy: Always
   replicas: 1
   enableAdminUi: false
@@ -10,7 +10,7 @@ app:
   adminUsernameKey: admin-username
   adminPasswordKey: admin-password
   existingSecret: ""
-  apiToken: ""
+  apiToken: "1234567"
   adminUsername: "admin"
   adminPassword: "admin"
 storage:

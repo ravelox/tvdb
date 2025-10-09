@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2025-10-22
+### Added
+- `GET /admin/database-dump` endpoint for exporting the full dataset, with matching tests, OpenAPI metadata, and Postman updates.
+
+### Changed
+- Bumped package, Docker, Helm, Kubernetes, and Postman versions to 1.6.0.
+
 ## [1.5.0] - 2025-10-21
 ### Added
 - Optional `limit` and `offset` pagination parameters across all collection `GET` endpoints, with matching OpenAPI/README updates so clients can page large datasets predictably.

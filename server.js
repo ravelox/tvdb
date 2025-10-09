@@ -393,6 +393,7 @@ const openapiBase = {
     '/deployment-version': { get: { tags:['health'], summary:'Get app deployment version', responses:{ '200':{ description:'Deployment version' } } } },
     '/init': { post: { tags:['health'], summary:'Initialize DB/schema', responses:{ '200':{ description:'Initialized' } } } },
     '/admin/reset-database': { post: { tags:['admin'], summary:'Reset database schema via API', responses:{ '200':{ description:'Reset' } } } },
+    '/admin/database-dump': { get: { tags:['admin'], summary:'Export entire database contents', responses:{ '200':{ description:'Database dump' } } } },
 
     '/actors': { get:{ tags:['actors'], summary:'List actors' }, post:{ tags:['actors'], summary:'Create actor' } },
     '/actors/{id}': { get:{ tags:['actors'], summary:'Get actor' }, put:{ tags:['actors'], summary:'Update actor' }, delete:{ tags:['actors'], summary:'Delete actor' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'integer'} }] },
@@ -448,9 +449,10 @@ const paginationParams = [
   { name:'limit', in:'query', required:false, schema:{ type:'integer', minimum:1 }, description:'Maximum number of rows to return; omit to return all rows' },
   { name:'offset', in:'query', required:false, schema:{ type:'integer', minimum:0, default:0 }, description:'Number of rows to skip before returning results (requires limit to be set)' }
 ];
+const defaultQueryParamSkipPaths = new Set(['/deployment-version', '/admin/database-dump']);
 for (const [path, ops] of Object.entries(openapiBase.paths)) {
   for (const [method, op] of Object.entries(ops)) {
-    if (method === 'get' && path !== '/deployment-version') {
+    if (method === 'get' && !defaultQueryParamSkipPaths.has(path)) {
       op.parameters = [...(op.parameters || []), ...dateRangeParams, includeParam, ...paginationParams];
     }
   }
@@ -504,6 +506,25 @@ app.post('/admin/reset-database', asyncH(async (_req, res) => {
   await resetDatabase();
   await refreshPool();
   res.json({ status: 'reset' });
+}));
+
+app.get('/admin/database-dump', asyncH(async (req, res) => {
+  const range = parseDateRange(req, res); if (!range) return;
+  const queries = {
+    actors: 'SELECT * FROM actors WHERE created_at BETWEEN ? AND ? ORDER BY id',
+    shows: 'SELECT * FROM shows WHERE created_at BETWEEN ? AND ? ORDER BY id',
+    seasons: 'SELECT * FROM seasons WHERE created_at BETWEEN ? AND ? ORDER BY id',
+    episodes: 'SELECT * FROM episodes WHERE created_at BETWEEN ? AND ? ORDER BY id',
+    characters: 'SELECT * FROM characters WHERE created_at BETWEEN ? AND ? ORDER BY id',
+    episodeCharacters: 'SELECT * FROM episode_characters WHERE created_at BETWEEN ? AND ? ORDER BY id',
+  };
+  const entries = await Promise.all(
+    Object.entries(queries).map(async ([key, sql]) => {
+      const [rows] = await dbExecute(sql, [range.startSql, range.endSql]);
+      return [key, rows];
+    })
+  );
+  res.json(Object.fromEntries(entries));
 }));
 
 // --------------------------- ACTORS ---------------------------
