@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     app: tvdb
+    tier: storage
 spec:
   replicas: 1
   selector:
@@ -14,10 +15,12 @@ spec:
     metadata:
       labels:
         app: tvdb
+        tier: storage
     spec:
 {{- if and (not .Values.storage.existingSecret) (not .Values.storage.password) }}
       {{- fail "Either storage.password or storage.existingSecret must be provided" }}
 {{- end }}
+      restartPolicy: {{ default "Always" .Values.storage.restartPolicy | quote }}
       initContainers:
         - name: remove-lostfound
           image: busybox

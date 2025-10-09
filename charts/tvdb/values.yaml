@@ -2,8 +2,9 @@ namespace: tvdb
 app:
   image:
     repository: ravelox/tvdb
-    tag: "1.7.0.13"
+    tag: "1.8.0.14"
     pullPolicy: Always
+  restartPolicy: ""
   replicas: 1
   enableAdminUi: false
   apiTokenKey: api-token
@@ -17,6 +18,7 @@ storage:
   image:
     repository: mysql
     tag: "8.0.36"
+  restartPolicy: "Always"
   password: "admin"
   passwordKey: mysql-root-password
   existingSecret: ""

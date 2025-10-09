@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     app: tvdb
+    tier: app
 spec:
   replicas: {{ .Values.app.replicas }}
   selector:
@@ -14,10 +15,12 @@ spec:
     metadata:
       labels:
         app: tvdb
+        tier: app
       annotations:
         checksum/app-secret: {{ include (print $.Template.BasePath "/app-secret.yaml") . | sha256sum }}
         checksum/storage-secret: {{ include (print $.Template.BasePath "/storage-secret.yaml") . | sha256sum }}
     spec:
+      restartPolicy: {{ default "Always" .Values.app.restartPolicy | quote }}
       initContainers:
       - name: wait-for-storage
         image: busybox:1.36.1

@@ -3,8 +3,13 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [1.8.0] - 2025-10-23
 ### Added
 - `POST /admin/database-import` endpoint to ingest database dumps with upsert semantics so environments can be restored from exports.
+- Helm chart exposes configurable pod `restartPolicy` overrides for the app and storage deployments.
+- CLI helpers `scripts/db-dump.sh` and `scripts/db-import.sh` to automate export/import flows against the admin endpoints.
+- Helm chart now adds `tier` labels to distinguish app vs storage resources, ensuring the services target the correct pods without breaking existing selectors.
 
 ## [1.6.0] - 2025-10-22
 ### Added

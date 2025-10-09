@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     app: tvdb
+    tier: storage
 spec:
   type: ClusterIP
   ports:

@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "TV Shows API",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "description": "CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs."
   },
   "servers": [

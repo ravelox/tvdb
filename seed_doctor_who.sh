@@ -950,12 +950,18 @@ EOF
 
 echo "Ensuring known episodes..."
 existing_eps=$(seed_api_get "$API/shows/$SHOW_ID/episodes")
-declare -A season_episode_counter=()
+current_season=""
+season_episode_index=0
 while IFS='|' read -r season air_date title description chars; do
   [ -z "$season" ] && continue
 
-  season_episode_counter["$season"]=$(( ${season_episode_counter["$season"]:-0} + 1 ))
-  ep_index=${season_episode_counter["$season"]}
+  if [ "$season" != "$current_season" ]; then
+    # Input rows are grouped by season; reset the per-season episode index on season change.
+    current_season="$season"
+    season_episode_index=0
+  fi
+  season_episode_index=$((season_episode_index + 1))
+  ep_index=$season_episode_index
   episode_code=$(format_episode_code "$season" "$ep_index")
   placeholder_title="$episode_code"
   old_placeholder_title="S${season}E${ep_index}"
