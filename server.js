@@ -84,7 +84,17 @@ const RETRIABLE_DB_ERROR_CODES = new Set([
   'ETIMEDOUT',
   'EHOSTUNREACH',
   'ENETUNREACH',
+  'POOL_CLOSED',
 ]);
+
+function isRetriableDbError(err) {
+  if (!err) return false;
+  if (err.fatal === true) return true;
+  if (RETRIABLE_DB_ERROR_CODES.has(err.code)) return true;
+  const message = typeof err.message === 'string' ? err.message.toLowerCase() : '';
+  if (message.includes('pool is closed')) return true;
+  return false;
+}
 
 async function runWithDbRetry(fn, { attempts = DB_RETRY_ATTEMPTS, delayMs = DB_RETRY_DELAY_MS } = {}) {
   const maxAttempts = Math.max(1, attempts);
@@ -92,8 +102,7 @@ async function runWithDbRetry(fn, { attempts = DB_RETRY_ATTEMPTS, delayMs = DB_R
     try {
       return await fn();
     } catch (err) {
-      const retriable =
-        (err && (RETRIABLE_DB_ERROR_CODES.has(err.code) || err.fatal === true)) || false;
+      const retriable = isRetriableDbError(err);
       if (!retriable || attempt === maxAttempts - 1) {
         throw err;
       }
@@ -176,12 +185,12 @@ async function ensurePool() {
 
 async function closePool() {
   if (!pool) return;
+  const current = pool;
+  pool = null;
   try {
-    await pool.end();
+    await current.end();
   } catch (err) {
     console.error('[db] Failed to close pool', err);
-  } finally {
-    pool = null;
   }
 }
 
@@ -195,8 +204,7 @@ async function dbCall(method, sql, params, attempt = 0) {
   try {
     return await client[method](sql, params);
   } catch (err) {
-    const retriable =
-      (err && (RETRIABLE_DB_ERROR_CODES.has(err.code) || err.fatal === true)) || false;
+    const retriable = isRetriableDbError(err);
     if (retriable && attempt < 2) {
       console.error(
         `[db] ${method} failed with ${err.code || err.message}; rebuilding pool (attempt ${attempt + 1})`
@@ -257,20 +265,48 @@ function exposedError(message) {
 }
 const asyncH = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
+const MYSQL_TIMESTAMP_MIN = new Date('1970-01-01T00:00:01Z');
+const MYSQL_TIMESTAMP_MAX = new Date('2038-01-19T03:14:07Z');
 const DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{2}:?\d{2})$/;
 function parseDateRange(req, res) {
   const { start, end } = req.query;
-  const earliest = new Date('1000-01-01T00:00:00+00:00');
-  const latest = new Date('9999-12-31T23:59:59+00:00');
+  const earliest = MYSQL_TIMESTAMP_MIN;
+  const latest = MYSQL_TIMESTAMP_MAX;
   let startDate = earliest;
   let endDate = latest;
   if (start) {
-    if (!DATE_RE.test(start) || isNaN(Date.parse(start))) return httpError(res, 400, 'invalid start date');
+    if (!DATE_RE.test(start) || isNaN(Date.parse(start))) {
+      httpError(res, 400, 'invalid start date');
+      return null;
+    }
     startDate = new Date(start);
+    if (startDate < earliest) {
+      httpError(res, 400, `start must be on or after ${earliest.toISOString()}`);
+      return null;
+    }
+    if (startDate > latest) {
+      httpError(res, 400, `start must be on or before ${latest.toISOString()}`);
+      return null;
+    }
   }
   if (end) {
-    if (!DATE_RE.test(end) || isNaN(Date.parse(end))) return httpError(res, 400, 'invalid end date');
+    if (!DATE_RE.test(end) || isNaN(Date.parse(end))) {
+      httpError(res, 400, 'invalid end date');
+      return null;
+    }
     endDate = new Date(end);
+    if (endDate < earliest) {
+      httpError(res, 400, `end must be on or after ${earliest.toISOString()}`);
+      return null;
+    }
+    if (endDate > latest) {
+      httpError(res, 400, `end must be on or before ${latest.toISOString()}`);
+      return null;
+    }
+  }
+  if (startDate > endDate) {
+    httpError(res, 400, 'start must be before end');
+    return null;
   }
   return {
     start: startDate,

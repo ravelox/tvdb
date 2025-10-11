@@ -34,6 +34,11 @@ while (( $# > 0 )); do
       shift
       break
       ;;
+    -)
+      OUTPUT_PATH="$1"
+      shift
+      break
+      ;;
     -*)
       echo "Unknown option: $1" >&2
       print_usage

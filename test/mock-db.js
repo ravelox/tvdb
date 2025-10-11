@@ -5,6 +5,7 @@ const Module = require('module');
 const TRIGGER_FILE = path.resolve(
   process.env.MOCK_DB_FAIL_ONCE_FILE || path.join(__dirname, '.fail-next-connection')
 );
+const POOL_CLOSED_TRIGGER = path.resolve(__dirname, '.pool-closed-next');
 
 function maybeFailConnection() {
   if (!TRIGGER_FILE) return null;
@@ -32,7 +33,25 @@ const stub = {
     };
   },
   createPool: () => {
+    let closed = false;
+
+    const maybeTripClosed = () => {
+      if (fs.existsSync(POOL_CLOSED_TRIGGER)) {
+        try {
+          fs.unlinkSync(POOL_CLOSED_TRIGGER);
+        } catch {}
+        closed = true;
+      }
+      if (closed) {
+        const err = new Error('Pool is closed.');
+        err.code = 'POOL_CLOSED';
+        err.fatal = true;
+        throw err;
+      }
+    };
+
     const execute = async (sql, params) => {
+      maybeTripClosed();
       const upper = sql.trim().toUpperCase();
       if (upper.includes('SELECT 1 AS OK')) {
         return [[{ ok: 1 }], []];
@@ -46,6 +65,7 @@ const stub = {
       return [[]];
     };
     const query = async (sql, params) => {
+      maybeTripClosed();
       const upper = sql.trim().toUpperCase();
       if (upper.includes('SELECT 1 AS OK')) {
         return [[{ ok: 1 }], []];
@@ -55,7 +75,7 @@ const stub = {
     return {
       execute,
       query,
-      end: async () => {},
+      end: async () => { closed = true; },
       getConnection: async () => ({
         execute,
         query,

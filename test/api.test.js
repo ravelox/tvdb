@@ -152,6 +152,31 @@ test('database administration endpoints', async (t) => {
     });
   });
 
+  await t.test('GET /admin/database-dump rejects out-of-range end date', async () => {
+    const res = await fetch('http://localhost:3000/admin/database-dump?end=9999-12-31T23:59:59+00:00');
+    assert.strictEqual(res.status, 400);
+    const body = await res.json();
+    assert.deepStrictEqual(body, {
+      error: 'end must be on or before 2038-01-19T03:14:07.000Z',
+    });
+  });
+
+  await t.test('GET /admin/database-dump recovers from closed pool', async () => {
+    const trigger = path.resolve(__dirname, '.pool-closed-next');
+    fs.writeFileSync(trigger, '1');
+    const res = await fetch('http://localhost:3000/admin/database-dump');
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.deepStrictEqual(body, {
+      actors: [],
+      shows: [],
+      seasons: [],
+      episodes: [],
+      characters: [],
+      episodeCharacters: []
+    });
+  });
+
   await t.test('POST /admin/database-import upserts payload', async () => {
     const payload = {
       actors: [{ id: 1, name: 'Importer', created_at: '2025-01-01T00:00:00.000Z' }],
