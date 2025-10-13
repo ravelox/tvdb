@@ -6,6 +6,7 @@ const TRIGGER_FILE = path.resolve(
   process.env.MOCK_DB_FAIL_ONCE_FILE || path.join(__dirname, '.fail-next-connection')
 );
 const POOL_CLOSED_TRIGGER = path.resolve(__dirname, '.pool-closed-next');
+const EXECUTE_REFUSED_TRIGGER = path.resolve(__dirname, '.execute-conn-refused');
 
 function maybeFailConnection() {
   if (!TRIGGER_FILE) return null;
@@ -50,8 +51,21 @@ const stub = {
       }
     };
 
+    const maybeTripExecuteFailure = () => {
+      if (fs.existsSync(EXECUTE_REFUSED_TRIGGER)) {
+        try {
+          fs.unlinkSync(EXECUTE_REFUSED_TRIGGER);
+        } catch {}
+        const err = new Error('connect ECONNREFUSED 127.0.0.1:3306');
+        err.code = 'ECONNREFUSED';
+        err.fatal = true;
+        throw err;
+      }
+    };
+
     const execute = async (sql, params) => {
       maybeTripClosed();
+       maybeTripExecuteFailure();
       const upper = sql.trim().toUpperCase();
       if (upper.includes('SELECT 1 AS OK')) {
         return [[{ ok: 1 }], []];
@@ -66,6 +80,7 @@ const stub = {
     };
     const query = async (sql, params) => {
       maybeTripClosed();
+      maybeTripExecuteFailure();
       const upper = sql.trim().toUpperCase();
       if (upper.includes('SELECT 1 AS OK')) {
         return [[{ ok: 1 }], []];

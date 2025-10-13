@@ -177,6 +177,15 @@ test('database administration endpoints', async (t) => {
     });
   });
 
+  await t.test('GET /admin/database-dump reports database outage', async () => {
+    const trigger = path.resolve(__dirname, '.execute-conn-refused');
+    fs.writeFileSync(trigger, '1');
+    const res = await fetch('http://localhost:3000/admin/database-dump');
+    assert.strictEqual(res.status, 503);
+    const body = await res.json();
+    assert.deepStrictEqual(body, { error: 'database temporarily unavailable' });
+  });
+
   await t.test('POST /admin/database-import upserts payload', async () => {
     const payload = {
       actors: [{ id: 1, name: 'Importer', created_at: '2025-01-01T00:00:00.000Z' }],
