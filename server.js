@@ -183,14 +183,17 @@ async function ensurePool() {
   return pool;
 }
 
-async function closePool() {
-  if (!pool) return;
-  const current = pool;
-  pool = null;
+async function closePool(target) {
+  const current = target || pool;
+  if (!current) return;
+  if (current === pool) {
+    pool = null;
+  }
   try {
     await current.end();
   } catch (err) {
-    console.error('[db] Failed to close pool', err);
+    const label = err && (err.code || err.message) ? (err.code || err.message) : err;
+    console.warn(`[db] Failed to close pool cleanly: ${label}`);
   }
 }
 
@@ -209,7 +212,7 @@ async function dbCall(method, sql, params, attempt = 0) {
       console.error(
         `[db] ${method} failed with ${err.code || err.message}; rebuilding pool (attempt ${attempt + 1})`
       );
-      await refreshPool();
+      await closePool(client);
       return dbCall(method, sql, params, attempt + 1);
     }
     throw err;
