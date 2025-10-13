@@ -150,6 +150,15 @@ chmod +x seed_sapphire_and_steel.sh
 
 Seeds ITV's *Sapphire & Steel* with six seasons of story arcs, creates the principal cast, and links each episode's characters to their matching actors. All seed scripts source `scripts/seed_common.sh`, which loads `$API_TOKEN` from `.env` (if present) and automatically retries requests while the API or database warms up.
 
+### Seed The Twilight Zone
+
+```bash
+chmod +x seed_twilight_zone.sh
+./seed_twilight_zone.sh
+```
+
+Creates the 1959 anthology series with five seasons and six signature episodes—each pre-populated with iconic characters and their actors (plus Rod Serling's narration).
+
 ### Reset the database
 ```bash
 ./reset_database.sh       # prompts before dropping data
