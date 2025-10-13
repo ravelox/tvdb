@@ -159,6 +159,15 @@ chmod +x seed_twilight_zone.sh
 
 Creates the 1959 anthology series with five seasons and six signature episodes—each pre-populated with iconic characters and their actors (plus Rod Serling's narration).
 
+### Seed Massive Export Fixture
+
+```bash
+chmod +x seed_massive_dummy_show.sh
+./seed_massive_dummy_show.sh
+```
+
+Generates a synthetic show with thousands of oversized episodes so `scripts/db-dump.sh` produces roughly a 30MB JSON export. Values such as seasons, episode counts, and payload size are configurable via environment variables; expect this script to run for several minutes and to create a large dataset intended purely for load testing.
+
 ### Reset the database
 ```bash
 ./reset_database.sh       # prompts before dropping data
