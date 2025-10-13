@@ -646,12 +646,11 @@ app.get('/admin/database-dump', asyncH(async (req, res) => {
     episodeCharacters: 'SELECT * FROM episode_characters WHERE created_at BETWEEN ? AND ? ORDER BY id',
   };
   try {
-    const entries = await Promise.all(
-      Object.entries(queries).map(async ([key, sql]) => {
-        const [rows] = await dbExecute(sql, [range.startSql, range.endSql]);
-        return [key, rows];
-      })
-    );
+    const entries = [];
+    for (const [key, sql] of Object.entries(queries)) {
+      const [rows] = await dbExecute(sql, [range.startSql, range.endSql]);
+      entries.push([key, rows]);
+    }
     res.json(Object.fromEntries(entries));
   } catch (err) {
     if (isRetriableDbError(err) || err.code === 'ER_ACCESS_DENIED_ERROR') {
