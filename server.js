@@ -584,6 +584,10 @@ for (const [path, ops] of Object.entries(openapiBase.paths)) {
     }
   }
 }
+openapiBase.paths['/admin/database-dump'].get.parameters = [
+  ...dateRangeParams,
+  ...paginationParams,
+];
 
 app.get(['/openapi.json', '/spec', '/.well-known/openapi.json'], (req, res) => {
   const base = `${req.protocol}://${req.get('host')}`;
@@ -637,6 +641,7 @@ app.post('/admin/reset-database', asyncH(async (_req, res) => {
 
 app.get('/admin/database-dump', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
+  const pagination = parsePagination(req, res); if (!pagination) return;
   const queries = {
     actors: 'SELECT * FROM actors WHERE created_at BETWEEN ? AND ? ORDER BY id',
     shows: 'SELECT * FROM shows WHERE created_at BETWEEN ? AND ? ORDER BY id',
@@ -647,8 +652,16 @@ app.get('/admin/database-dump', asyncH(async (req, res) => {
   };
   try {
     const entries = [];
-    for (const [key, sql] of Object.entries(queries)) {
-      const [rows] = await dbExecute(sql, [range.startSql, range.endSql]);
+    for (const [key, baseSql] of Object.entries(queries)) {
+      const baseParams = [range.startSql, range.endSql];
+      let sql = baseSql;
+      if (pagination.limit != null) {
+        const { limit, offset } = pagination;
+        // mysql2 throws ER_WRONG_ARGUMENTS when binding limit/offset placeholders in some environments,
+        // so inline the validated integers instead of using parameter markers.
+        sql = `${baseSql} LIMIT ${limit} OFFSET ${offset ?? 0}`;
+      }
+      const [rows] = await dbExecute(sql, baseParams);
       entries.push([key, rows]);
     }
     res.json(Object.fromEntries(entries));

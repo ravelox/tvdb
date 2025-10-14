@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "TV Shows API",
-    "version": "1.8.0",
+    "version": "1.8.7",
     "description": "CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs."
   },
   "servers": [
@@ -263,6 +263,49 @@
           "admin"
         ],
         "summary": "Export entire database contents",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at >= start"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filter results with created_at <= end (default limitless)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of rows to return; omit to return all rows"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of rows to skip before returning results (requires limit to be set)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Database dump"

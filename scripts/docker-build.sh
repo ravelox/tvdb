@@ -79,7 +79,10 @@ prune_old_build_tags() {
     return
   fi
 
-  mapfile -t sorted_tags < <(printf '%s\n' "${tags[@]}" | sort -t: -k2,2nr)
+  local sorted_tags=()
+  while IFS= read -r line; do
+    sorted_tags+=("$line")
+  done < <(printf '%s\n' "${tags[@]}" | sort -t: -k2,2nr)
 
   local keep_tags=()
   for entry in "${sorted_tags[@]:0:keep_count}"; do
@@ -198,4 +201,3 @@ if $push_image; then
 fi
 
 echo "Completed build for ${repository}:${full_version}"
-

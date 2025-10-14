@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.7] - 2025-10-14
+### Added
+- `/admin/database-dump` accepts `limit` and `offset` so administrators can export smaller slices of data while retaining the original payload shape.
+- README documents the admin dump pagination knobs for quick reference.
+
+### Fixed
+- `scripts/docker-build.sh` no longer depends on Bash 4+ features (`mapfile`), allowing Docker image builds to run on macOS default shells.
+- Admin database dump pagination now inlines validated limits/offsets to work with stricter MySQL servers.
+
 ## [1.8.0] - 2025-10-23
 ### Added
 - `POST /admin/database-import` endpoint to ingest database dumps with upsert semantics so environments can be restored from exports.

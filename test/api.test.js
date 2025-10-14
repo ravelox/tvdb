@@ -152,6 +152,25 @@ test('database administration endpoints', async (t) => {
     });
   });
 
+  await t.test('GET /admin/database-dump supports limit and offset', async () => {
+    const res = await fetch('http://localhost:3000/admin/database-dump?limit=5&offset=0');
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.ok(Array.isArray(body.actors));
+    assert.ok(Array.isArray(body.shows));
+    assert.ok(Array.isArray(body.seasons));
+    assert.ok(Array.isArray(body.episodes));
+    assert.ok(Array.isArray(body.characters));
+    assert.ok(Array.isArray(body.episodeCharacters));
+  });
+
+  await t.test('GET /admin/database-dump rejects offset without limit', async () => {
+    const res = await fetch('http://localhost:3000/admin/database-dump?offset=10');
+    assert.strictEqual(res.status, 400);
+    const body = await res.json();
+    assert.deepStrictEqual(body, { error: 'offset requires limit to be set' });
+  });
+
   await t.test('GET /admin/database-dump rejects out-of-range end date', async () => {
     const res = await fetch('http://localhost:3000/admin/database-dump?end=9999-12-31T23:59:59+00:00');
     assert.strictEqual(res.status, 400);

@@ -61,6 +61,7 @@ See `.env.example` for a compose-ready set of defaults—the seed scripts automa
 - `scripts/db-dump.sh [--api URL] <file|- >` calls `/admin/database-dump` and writes the JSON export locally (use `-` to stream to stdout).
 - `scripts/db-import.sh [--api URL] <file|- >` posts a dump back to `/admin/database-import`, upserting rows in dependency order.
 - Both scripts reuse the seeding helpers, so `API`/`API_TOKEN` from `.env` or the environment apply automatically (the `--api` flag overrides the base URL per invocation).
+- The dump endpoint accepts `limit`/`offset` query parameters if you need paginated slices (for example, `/admin/database-dump?limit=500&offset=1000`). Pagination trims every table’s rows to the requested window but preserves the same object-of-arrays structure in the response.
 
 ### TV Explorer web app
 
@@ -89,7 +90,7 @@ npm run docker:build -- --push
 ```
 By default the helper script builds an x86_64 image locally (loaded into your Docker daemon). Pass `--push` to publish the multi-architecture image set.
 
-Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.8.0`) plus a numeric suffix such as `1.8.0.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
+Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.8.7`) plus a numeric suffix such as `1.8.7.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
 
 ### Release automation
 
