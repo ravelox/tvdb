@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ## [1.8.9] - 2025-10-15
+### Added
+- `/admin/database-dump` accepts `showIds`, `seasonIds`, `episodeIds`, `characterIds`, and `actorIds` query filters and automatically scopes dependent records so exports can focus on specific shows or subsets of data.
+
 ### Changed
 - Link headers emitted by cursor pagination now omit angle brackets so downstream HTTP clients can parse the header without stripping delimiters.
 

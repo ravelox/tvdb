@@ -448,6 +448,23 @@ function parsePagination(req, res) {
   };
 }
 
+function parseIdListParam(rawValue, fieldLabel, res) {
+  if (rawValue == null) return [];
+  const values = Array.isArray(rawValue) ? rawValue : String(rawValue).split(',');
+  const ids = new Set();
+  for (const raw of values) {
+    const trimmed = String(raw).trim();
+    if (!trimmed) continue;
+    const num = Number(trimmed);
+    if (!Number.isInteger(num) || num <= 0) {
+      httpError(res, 400, `${fieldLabel} must contain positive integers`);
+      return null;
+    }
+    ids.add(num);
+  }
+  return Array.from(ids);
+}
+
 function flipSortDirection(direction = 'ASC') {
   return String(direction).toUpperCase() === 'DESC' ? 'ASC' : 'DESC';
 }
@@ -848,6 +865,13 @@ const paginationParams = [
   { name:'offset', in:'query', required:false, schema:{ type:'integer', minimum:0, default:0 }, description:'Number of rows to skip before returning results (requires limit to be set)' },
   { name:'page_info', in:'query', required:false, schema:{ type:'string' }, description:'Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)' }
 ];
+const dumpFilterParams = [
+  { name:'showIds', in:'query', required:false, schema:{ type:'string' }, description:'Comma-separated list of show IDs to include (related seasons, episodes, characters, and actors are scoped automatically)' },
+  { name:'seasonIds', in:'query', required:false, schema:{ type:'string' }, description:'Comma-separated list of season IDs to include (their parent shows are pulled into the export)' },
+  { name:'episodeIds', in:'query', required:false, schema:{ type:'string' }, description:'Comma-separated list of episode IDs to include along with their parent seasons, shows, and related characters' },
+  { name:'characterIds', in:'query', required:false, schema:{ type:'string' }, description:'Comma-separated list of character IDs to include along with their shows and actors' },
+  { name:'actorIds', in:'query', required:false, schema:{ type:'string' }, description:'Comma-separated list of actor IDs to include; combine with other filters for precise exports' }
+];
 const defaultQueryParamSkipPaths = new Set(['/deployment-version', '/admin/database-dump']);
 for (const [path, ops] of Object.entries(openapiBase.paths)) {
   for (const [method, op] of Object.entries(ops)) {
@@ -859,6 +883,7 @@ for (const [path, ops] of Object.entries(openapiBase.paths)) {
 openapiBase.paths['/admin/database-dump'].get.parameters = [
   ...dateRangeParams,
   ...paginationParams,
+  ...dumpFilterParams,
 ];
 
 app.get(['/openapi.json', '/spec', '/.well-known/openapi.json'], (req, res) => {
@@ -914,6 +939,76 @@ app.post('/admin/reset-database', asyncH(async (_req, res) => {
 app.get('/admin/database-dump', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   const pagination = parsePagination(req, res); if (!pagination) return;
+  const showIdList = parseIdListParam(req.query.showIds ?? req.query.show_ids ?? req.query.shows, 'showIds', res); if (showIdList == null) return;
+  const seasonIdList = parseIdListParam(req.query.seasonIds ?? req.query.season_ids ?? req.query.seasons, 'seasonIds', res); if (seasonIdList == null) return;
+  const episodeIdList = parseIdListParam(req.query.episodeIds ?? req.query.episode_ids ?? req.query.episodes, 'episodeIds', res); if (episodeIdList == null) return;
+  const characterIdList = parseIdListParam(req.query.characterIds ?? req.query.character_ids ?? req.query.characters, 'characterIds', res); if (characterIdList == null) return;
+  const actorIdList = parseIdListParam(req.query.actorIds ?? req.query.actor_ids ?? req.query.actors, 'actorIds', res); if (actorIdList == null) return;
+
+  const filters = {
+    showIds: new Set(showIdList),
+    seasonIds: new Set(seasonIdList),
+    episodeIds: new Set(episodeIdList),
+    characterIds: new Set(characterIdList),
+    actorIds: new Set(actorIdList),
+  };
+
+  const addAll = (set, values) => {
+    for (const value of values) {
+      if (value != null) {
+        set.add(value);
+      }
+    }
+  };
+
+  // Derive related identifiers so parent/child records stay consistent.
+  if (filters.seasonIds.size) {
+    const placeholders = Array.from(filters.seasonIds).map(() => '?').join(',');
+    const [rows] = await dbQuery(
+      `SELECT id, show_id FROM seasons WHERE id IN (${placeholders})`,
+      Array.from(filters.seasonIds)
+    );
+    for (const row of rows) {
+      addAll(filters.showIds, [row.show_id]);
+    }
+  }
+
+  if (filters.episodeIds.size) {
+    const episodeValues = Array.from(filters.episodeIds);
+    const placeholders = episodeValues.map(() => '?').join(',');
+    const [rows] = await dbQuery(
+      `SELECT e.id, e.season_id, s.show_id
+       FROM episodes e
+       JOIN seasons s ON s.id = e.season_id
+       WHERE e.id IN (${placeholders})`,
+      episodeValues
+    );
+    for (const row of rows) {
+      addAll(filters.seasonIds, [row.season_id]);
+      addAll(filters.showIds, [row.show_id]);
+    }
+    const [episodeCharacterRows] = await dbQuery(
+      `SELECT DISTINCT character_id FROM episode_characters WHERE episode_id IN (${placeholders})`,
+      episodeValues
+    );
+    addAll(filters.characterIds, episodeCharacterRows.map((row) => row.character_id));
+  }
+
+  if (filters.characterIds.size) {
+    const characterValues = Array.from(filters.characterIds);
+    const placeholders = characterValues.map(() => '?').join(',');
+    const [rows] = await dbQuery(
+      `SELECT id, show_id, actor_id FROM characters WHERE id IN (${placeholders})`,
+      characterValues
+    );
+    for (const row of rows) {
+      addAll(filters.showIds, [row.show_id]);
+      if (row.actor_id != null) {
+        filters.actorIds.add(row.actor_id);
+      }
+    }
+  }
+
   let offset = pagination.offset ?? 0;
   if (pagination.cursorValues && Object.prototype.hasOwnProperty.call(pagination.cursorValues, 'offset')) {
     const cursorOffset = Number(pagination.cursorValues.offset);
@@ -922,31 +1017,134 @@ app.get('/admin/database-dump', asyncH(async (req, res) => {
     }
     offset = cursorOffset;
   }
-  const queries = {
-    actors: 'SELECT * FROM actors WHERE created_at BETWEEN ? AND ? ORDER BY id',
-    shows: 'SELECT * FROM shows WHERE created_at BETWEEN ? AND ? ORDER BY id',
-    seasons: 'SELECT * FROM seasons WHERE created_at BETWEEN ? AND ? ORDER BY id',
-    episodes: 'SELECT * FROM episodes WHERE created_at BETWEEN ? AND ? ORDER BY id',
-    characters: 'SELECT * FROM characters WHERE created_at BETWEEN ? AND ? ORDER BY id',
-    episodeCharacters: 'SELECT * FROM episode_characters WHERE created_at BETWEEN ? AND ? ORDER BY id',
-  };
   try {
     const entries = [];
     let hasMore = false;
-    for (const [key, baseSql] of Object.entries(queries)) {
-      const baseParams = [range.startSql, range.endSql];
-      let sql = baseSql;
+    const showIds = Array.from(filters.showIds);
+    const seasonIds = Array.from(filters.seasonIds);
+    const episodeIds = Array.from(filters.episodeIds);
+    const characterIds = Array.from(filters.characterIds);
+    const actorIds = Array.from(filters.actorIds);
+
+    const appendInCondition = (conditions, params, column, values) => {
+      if (!values || !values.length) return;
+      conditions.push(`${column} IN (${values.map(() => '?').join(',')})`);
+      params.push(...values);
+    };
+
+    const datasetOrder = ['shows', 'seasons', 'episodes', 'characters', 'actors', 'episodeCharacters'];
+    for (const key of datasetOrder) {
+      let sql;
+      const params = [];
+      if (key === 'shows') {
+        sql = 'SELECT * FROM shows';
+        const conditions = ['created_at BETWEEN ? AND ?'];
+        params.push(range.startSql, range.endSql);
+        appendInCondition(conditions, params, 'id', showIds);
+        if (conditions.length) {
+          sql += ` WHERE ${conditions.join(' AND ')}`;
+        }
+        sql += ' ORDER BY id';
+      } else if (key === 'seasons') {
+        sql = 'SELECT * FROM seasons';
+        const conditions = ['created_at BETWEEN ? AND ?'];
+        params.push(range.startSql, range.endSql);
+        appendInCondition(conditions, params, 'show_id', showIds);
+        appendInCondition(conditions, params, 'id', seasonIds);
+        if (conditions.length) {
+          sql += ` WHERE ${conditions.join(' AND ')}`;
+        }
+        sql += ' ORDER BY id';
+      } else if (key === 'episodes') {
+        sql = 'SELECT e.* FROM episodes e JOIN seasons s ON s.id = e.season_id';
+        const conditions = ['e.created_at BETWEEN ? AND ?'];
+        params.push(range.startSql, range.endSql);
+        appendInCondition(conditions, params, 's.show_id', showIds);
+        appendInCondition(conditions, params, 'e.season_id', seasonIds);
+        appendInCondition(conditions, params, 'e.id', episodeIds);
+        if (conditions.length) {
+          sql += ` WHERE ${conditions.join(' AND ')}`;
+        }
+        sql += ' ORDER BY e.id';
+      } else if (key === 'characters') {
+        sql = 'SELECT * FROM characters';
+        const conditions = ['created_at BETWEEN ? AND ?'];
+        params.push(range.startSql, range.endSql);
+        appendInCondition(conditions, params, 'show_id', showIds);
+        appendInCondition(conditions, params, 'id', characterIds);
+        appendInCondition(conditions, params, 'actor_id', actorIds);
+        if (conditions.length) {
+          sql += ` WHERE ${conditions.join(' AND ')}`;
+        }
+        sql += ' ORDER BY id';
+      } else if (key === 'actors') {
+        sql = 'SELECT a.* FROM actors a';
+        const conditions = ['a.created_at BETWEEN ? AND ?'];
+        params.push(range.startSql, range.endSql);
+        const includeClauses = [];
+        if (actorIds.length) {
+          includeClauses.push({
+            clause: `a.id IN (${actorIds.map(() => '?').join(',')})`,
+            values: actorIds
+          });
+        }
+        if (showIds.length) {
+          includeClauses.push({
+            clause: `EXISTS (SELECT 1 FROM characters c WHERE c.actor_id = a.id AND c.show_id IN (${showIds.map(() => '?').join(',')}))`,
+            values: showIds
+          });
+        }
+        if (characterIds.length) {
+          includeClauses.push({
+            clause: `EXISTS (SELECT 1 FROM characters c WHERE c.actor_id = a.id AND c.id IN (${characterIds.map(() => '?').join(',')}))`,
+            values: characterIds
+          });
+        }
+        if (includeClauses.length) {
+          const combined = includeClauses.map((entry) => entry.clause).join(' OR ');
+          conditions.push(`(${combined})`);
+          for (const entry of includeClauses) {
+            params.push(...entry.values);
+          }
+        }
+        if (conditions.length) {
+          sql += ` WHERE ${conditions.join(' AND ')}`;
+        }
+        sql += ' ORDER BY a.id';
+      } else if (key === 'episodeCharacters') {
+        sql = `SELECT ec.*
+               FROM episode_characters ec
+               JOIN episodes e ON e.id = ec.episode_id
+               JOIN seasons s ON s.id = e.season_id`;
+        const conditions = ['ec.created_at BETWEEN ? AND ?'];
+        params.push(range.startSql, range.endSql);
+        appendInCondition(conditions, params, 's.show_id', showIds);
+        appendInCondition(conditions, params, 's.id', seasonIds);
+        appendInCondition(conditions, params, 'ec.episode_id', episodeIds);
+        appendInCondition(conditions, params, 'ec.character_id', characterIds);
+        if (conditions.length) {
+          sql += ` WHERE ${conditions.join(' AND ')}`;
+        }
+        sql += ' ORDER BY ec.id';
+      } else {
+        continue;
+      }
+
       if (pagination.limit != null) {
         const effectiveLimit = pagination.limit + 1;
-        sql = `${baseSql} LIMIT ${effectiveLimit} OFFSET ${offset}`;
+        sql += ` LIMIT ${effectiveLimit}`;
+        if (!pagination.usingPageInfo) {
+          sql += ` OFFSET ${offset}`;
+        }
       }
+
       let rows;
       try {
-        [rows] = await dbExecute(sql, baseParams, { retry: false });
+        [rows] = await dbExecute(sql, params, { retry: false });
       } catch (err) {
         if (err && err.code === 'POOL_CLOSED') {
           await refreshPool();
-          [rows] = await dbExecute(sql, baseParams, { retry: false });
+          [rows] = await dbExecute(sql, params, { retry: false });
         } else {
           throw err;
         }
@@ -979,7 +1177,7 @@ app.get('/admin/database-dump', asyncH(async (req, res) => {
         const params = new URLSearchParams(baseParams.toString());
         params.set('page_info', prevToken);
         const qs = params.toString();
-        links.push(`<${path}${qs ? `?${qs}` : ''}>; rel="previous"`);
+        links.push(`${path}${qs ? `?${qs}` : ''}; rel="previous"`);
       }
       if (hasMore) {
         const nextOffset = offset + pagination.limit;
@@ -987,7 +1185,7 @@ app.get('/admin/database-dump', asyncH(async (req, res) => {
         const params = new URLSearchParams(baseParams.toString());
         params.set('page_info', nextToken);
         const qs = params.toString();
-        links.push(`<${path}${qs ? `?${qs}` : ''}>; rel="next"`);
+        links.push(`${path}${qs ? `?${qs}` : ''}; rel="next"`);
       }
       if (links.length) {
         res.set('Link', links.join(', '));

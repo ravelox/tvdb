@@ -62,6 +62,7 @@ See `.env.example` for a compose-ready set of defaults—the seed scripts automa
 - `scripts/db-import.sh [--api URL] <file|- >` posts a dump back to `/admin/database-import`, upserting rows in dependency order.
 - Both scripts reuse the seeding helpers, so `API`/`API_TOKEN` from `.env` or the environment apply automatically (the `--api` flag overrides the base URL per invocation).
 - The dump endpoint accepts `limit`/`offset` query parameters if you need paginated slices (for example, `/admin/database-dump?limit=500&offset=1000`). Pagination trims every table’s rows to the requested window but preserves the same object-of-arrays structure in the response.
+- You can scope exports by passing comma-separated ID filters: `showIds`, `seasonIds`, `episodeIds`, `characterIds`, and `actorIds`. Each filter automatically pulls the related hierarchy (for example, `showIds=1,2` returns only those shows plus their seasons, episodes, characters, episode-character links, and linked actors).
 
 ### TV Explorer web app
 

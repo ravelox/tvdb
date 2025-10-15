@@ -51,7 +51,7 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/admin/database-dump",
-            "description": "Export entire database contents"
+            "description": "Export entire database contents (supports limit/offset/page_info plus showIds, seasonIds, episodeIds, characterIds, and actorIds filters)"
           }
         },
         {

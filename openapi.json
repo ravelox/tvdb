@@ -333,6 +333,51 @@
               "type": "string"
             },
             "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
+          },
+          {
+            "name": "showIds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of show IDs to include (related seasons, episodes, characters, and actors are scoped automatically)"
+          },
+          {
+            "name": "seasonIds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of season IDs to include (their parent shows are pulled into the export)"
+          },
+          {
+            "name": "episodeIds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of episode IDs to include along with their parent seasons, shows, and related characters"
+          },
+          {
+            "name": "characterIds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of character IDs to include along with their shows and actors"
+          },
+          {
+            "name": "actorIds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of actor IDs to include; combine with other filters for precise exports"
           }
         ],
         "responses": {

@@ -180,6 +180,24 @@ test('database administration endpoints', async (t) => {
     });
   });
 
+  await t.test('GET /admin/database-dump rejects invalid showIds filter', async () => {
+    const res = await fetch('http://localhost:3000/admin/database-dump?showIds=foo');
+    assert.strictEqual(res.status, 400);
+    const body = await res.json();
+    assert.deepStrictEqual(body, { error: 'showIds must contain positive integers' });
+  });
+
+  await t.test('GET /admin/database-dump accepts showIds filter', async () => {
+    const res = await fetch('http://localhost:3000/admin/database-dump?showIds=1,2');
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.ok(Array.isArray(body.shows));
+    assert.ok(Array.isArray(body.seasons));
+    assert.ok(Array.isArray(body.episodes));
+    assert.ok(Array.isArray(body.characters));
+    assert.ok(Array.isArray(body.actors));
+  });
+
   await t.test('GET /admin/database-dump recovers from closed pool', async () => {
     const trigger = path.resolve(__dirname, '.pool-closed-next');
     fs.writeFileSync(trigger, '1');
