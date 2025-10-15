@@ -237,11 +237,11 @@ curl -s "$API/episodes/1/characters?limit=10&offset=10" | jq .
 # Inspect the Link header and follow the next page cursor
 curl -I "$API/shows?limit=5" | grep -i '^Link:'
 # Copy the page_info value from rel="next" and pass it straight through:
-NEXT=$(curl -sI "$API/shows?limit=5" | awk -F'[?&]' '/rel="next"/ { for (i=1;i<=NF;i++) if ($i ~ /^page_info=/) { sub(/>.*/, "", $i); print substr($i,11); break } }')
+NEXT=$(curl -sI "$API/shows?limit=5" | awk -F'[?&;]' '/rel="next"/ { for (i=1;i<=NF;i++) if ($i ~ /^page_info=/) { sub(/^page_info=/, "", $i); print $i; break } }')
 curl -s "$API/shows?limit=5&page_info=$NEXT" | jq .
 
 # The rel="previous" link returns you to the prior window using the same token dance:
-PREV=$(curl -sI "$API/shows?limit=5&page_info=$NEXT" | awk -F'[?&]' '/rel="previous"/ { for (i=1;i<=NF;i++) if ($i ~ /^page_info=/) { sub(/>.*/, "", $i); print substr($i,11); break } }')
+PREV=$(curl -sI "$API/shows?limit=5&page_info=$NEXT" | awk -F'[?&;]' '/rel="previous"/ { for (i=1;i<=NF;i++) if ($i ~ /^page_info=/) { sub(/^page_info=/, "", $i); print $i; break } }')
 curl -s "$API/shows?limit=5&page_info=$PREV" | jq .
 ```
 

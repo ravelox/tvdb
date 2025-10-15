@@ -606,14 +606,14 @@ function buildPaginationLinks({ req, limit, items, hasExtra, cursorDirection, us
     const params = new URLSearchParams(baseParams.toString());
     params.set('page_info', token);
     const qs = params.toString();
-    links.push(`<${path}${qs ? `?${qs}` : ''}>; rel="previous"`);
+    links.push(`${path}${qs ? `?${qs}` : ''}; rel="previous"`);
   }
   if (hasNextLink && items.length) {
     const token = encodePageInfoFromRow('next', limit, order, items[items.length - 1]);
     const params = new URLSearchParams(baseParams.toString());
     params.set('page_info', token);
     const qs = params.toString();
-    links.push(`<${path}${qs ? `?${qs}` : ''}>; rel="next"`);
+    links.push(`${path}${qs ? `?${qs}` : ''}; rel="next"`);
   }
   return links;
 }
