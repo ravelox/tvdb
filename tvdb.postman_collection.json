@@ -2,7 +2,7 @@
   "info": {
     "name": "TV Shows API",
     "description": "CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs.",
-    "version": "1.8.10",
+    "version": "1.8.11",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
