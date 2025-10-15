@@ -32,6 +32,21 @@ definitions:
       type: ApiKeyAuthenticator
       header: x-api-token
       api_token: "{{ config.get('api_token', '') }}"
+    error_handler:
+      type: CompositeErrorHandler
+      error_handlers:
+        - type: DefaultErrorHandler
+          max_retries: 3
+        - type: RateLimitErrorHandler
+          response_filter:
+            type: HttpResponseFilter
+            http_codes:
+              - 429
+          backoff_strategies:
+            - type: WaitTimeFromHeader
+              header: Retry-After
+            - type: WaitFixed
+              wait_time: 5
 
   default_paginator:
     type: DefaultPaginator
