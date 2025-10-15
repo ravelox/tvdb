@@ -91,7 +91,7 @@ npm run docker:build -- --push
 ```
 By default the helper script builds an x86_64 image locally (loaded into your Docker daemon). Pass `--push` to publish the multi-architecture image set.
 
-Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.8.9`) plus a numeric suffix such as `1.8.9.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
+Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.8.10`) plus a numeric suffix such as `1.8.10.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
 
 ### Release automation
 
