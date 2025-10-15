@@ -138,16 +138,20 @@ Use `-f my-values.yaml` or `--set key=value` to customize any of the values.
 
 ### Seed classic Doctor Who
 ```bash
-chmod +x seed_doctor_who.sh
+chmod +x seed_doctor_who.sh unseed_doctor_who.sh
 ./seed_doctor_who.sh
+# Remove everything seeded above
+./unseed_doctor_who.sh
 ```
 Seeds seasons 1–26, a subset of actors & characters, one opener episode per season, **and links characters** to each opener.
 
 ### Seed Sapphire & Steel
 
 ```bash
-chmod +x seed_sapphire_and_steel.sh
+chmod +x seed_sapphire_and_steel.sh unseed_sapphire_and_steel.sh
 ./seed_sapphire_and_steel.sh
+# Remove everything seeded above
+./unseed_sapphire_and_steel.sh
 ```
 
 Seeds ITV's *Sapphire & Steel* with six seasons of story arcs, creates the principal cast, and links each episode's characters to their matching actors. All seed scripts source `scripts/seed_common.sh`, which loads `$API_TOKEN` from `.env` (if present) and automatically retries requests while the API or database warms up.
@@ -155,8 +159,10 @@ Seeds ITV's *Sapphire & Steel* with six seasons of story arcs, creates the princ
 ### Seed The Twilight Zone
 
 ```bash
-chmod +x seed_twilight_zone.sh
+chmod +x seed_twilight_zone.sh unseed_twilight_zone.sh
 ./seed_twilight_zone.sh
+# Remove everything seeded above
+./unseed_twilight_zone.sh
 ```
 
 Creates the 1959 anthology series with five seasons and six signature episodes—each pre-populated with iconic characters and their actors (plus Rod Serling's narration).
@@ -164,8 +170,10 @@ Creates the 1959 anthology series with five seasons and six signature episodes�
 ### Seed Massive Export Fixture
 
 ```bash
-chmod +x seed_massive_dummy_show.sh
+chmod +x seed_massive_dummy_show.sh unseed_massive_dummy_show.sh
 ./seed_massive_dummy_show.sh
+# Remove everything seeded above
+./unseed_massive_dummy_show.sh
 ```
 
 Generates a synthetic show with thousands of oversized episodes so `scripts/db-dump.sh` produces roughly a 30MB JSON export. Values such as seasons, episode counts, and payload size are configurable via environment variables; expect this script to run for several minutes and to create a large dataset intended purely for load testing.
