@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.9] - 2025-10-15
+### Changed
+- Link headers emitted by cursor pagination now omit angle brackets so downstream HTTP clients can parse the header without stripping delimiters.
+
 ## [1.8.8] - 2025-10-15
 ### Added
 - Cursor-based pagination (`page_info` + `Link` headers) for every REST collection endpoint and `/admin/database-dump`, mirroring Shopify’s next/previous flow.
