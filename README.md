@@ -90,7 +90,7 @@ npm run docker:build -- --push
 ```
 By default the helper script builds an x86_64 image locally (loaded into your Docker daemon). Pass `--push` to publish the multi-architecture image set.
 
-Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.8.7`) plus a numeric suffix such as `1.8.7.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
+Each run increments a local `.docker-build-number` counter and tags the image with the semantic package version (for example `1.8.8`) plus a numeric suffix such as `1.8.8.7`. Set the optional `APP_VERSION`/`BUILD_NUMBER` build arguments (or the matching environment variables consumed by `docker-compose.yaml`) if you need to override either value manually.
 
 ### Release automation
 
@@ -225,7 +225,7 @@ curl -s -X POST "$API/graphql" \
 ```
 
 ### Pagination on list endpoints
-All collection `GET` endpoints accept optional `limit` and `offset` query parameters in addition to the existing `start`, `end`, and `include` filters. Use `limit` to cap the number of rows returned and `offset` (requires `limit`) to skip a number of rows before results begin.
+All collection `GET` endpoints accept optional `limit` and `offset` query parameters in addition to the existing `start`, `end`, and `include` filters. Use `limit` to cap the number of rows returned and `offset` (requires `limit`) to skip a number of rows before results begin. Responses also emit Shopify-style `Link` headers with opaque `page_info` cursors so clients can advance or rewind without calculating offsets. The cursor is returned on every paginated endpoint (including `/admin/database-dump`) and should be treated as an opaque token.
 
 ```bash
 # Fetch five shows starting at the sixth row, ordered the same way as the default response
@@ -233,6 +233,16 @@ curl -s "$API/shows?limit=5&offset=5" | jq .
 
 # Page through characters linked to a specific episode
 curl -s "$API/episodes/1/characters?limit=10&offset=10" | jq .
+
+# Inspect the Link header and follow the next page cursor
+curl -I "$API/shows?limit=5" | grep -i '^Link:'
+# Copy the page_info value from rel="next" and pass it straight through:
+NEXT=$(curl -sI "$API/shows?limit=5" | awk -F'[?&]' '/rel="next"/ { for (i=1;i<=NF;i++) if ($i ~ /^page_info=/) { sub(/>.*/, "", $i); print substr($i,11); break } }')
+curl -s "$API/shows?limit=5&page_info=$NEXT" | jq .
+
+# The rel="previous" link returns you to the prior window using the same token dance:
+PREV=$(curl -sI "$API/shows?limit=5&page_info=$NEXT" | awk -F'[?&]' '/rel="previous"/ { for (i=1;i<=NF;i++) if ($i ~ /^page_info=/) { sub(/>.*/, "", $i); print substr($i,11); break } }')
+curl -s "$API/shows?limit=5&page_info=$PREV" | jq .
 ```
 
 ### Actors

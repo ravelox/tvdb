@@ -202,25 +202,25 @@ async function refreshPool() {
   return ensurePool();
 }
 
-async function dbCall(method, sql, params, attempt = 0) {
+async function dbCall(method, sql, params, attempt = 0, options = {}) {
   const client = await ensurePool();
   try {
     return await client[method](sql, params);
   } catch (err) {
-    const retriable = isRetriableDbError(err);
+    const retriable = options.retry !== false && isRetriableDbError(err);
     if (retriable && attempt < 2) {
       console.error(
         `[db] ${method} failed with ${err.code || err.message}; rebuilding pool (attempt ${attempt + 1})`
       );
       await closePool(client);
-      return dbCall(method, sql, params, attempt + 1);
+      return dbCall(method, sql, params, attempt + 1, options);
     }
     throw err;
   }
 }
 
-const dbExecute = (sql, params) => dbCall('execute', sql, params);
-const dbQuery = (sql, params) => dbCall('query', sql, params);
+const dbExecute = (sql, params, options) => dbCall('execute', sql, params, 0, options);
+const dbQuery = (sql, params, options) => dbCall('query', sql, params, 0, options);
 
 const app = express();
 app.use(express.json());
@@ -271,18 +271,32 @@ const asyncH = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).c
 const MYSQL_TIMESTAMP_MIN = new Date('1970-01-01T00:00:01Z');
 const MYSQL_TIMESTAMP_MAX = new Date('2038-01-19T03:14:07Z');
 const DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{2}:?\d{2})$/;
+
+function normalizeDateInput(value) {
+  if (value == null) return value;
+  const trimmed = String(value).trim();
+  if (!trimmed) return trimmed;
+  const spaceIndex = trimmed.indexOf(' ');
+  const tIndex = trimmed.indexOf('T');
+  if (spaceIndex > tIndex && tIndex >= 0) {
+    return trimmed.slice(0, spaceIndex) + '+' + trimmed.slice(spaceIndex + 1);
+  }
+  return trimmed;
+}
+
 function parseDateRange(req, res) {
-  const { start, end } = req.query;
+  const startRaw = normalizeDateInput(req.query.start);
+  const endRaw = normalizeDateInput(req.query.end);
   const earliest = MYSQL_TIMESTAMP_MIN;
   const latest = MYSQL_TIMESTAMP_MAX;
   let startDate = earliest;
   let endDate = latest;
-  if (start) {
-    if (!DATE_RE.test(start) || isNaN(Date.parse(start))) {
+  if (startRaw) {
+    if (!DATE_RE.test(startRaw) || isNaN(Date.parse(startRaw))) {
       httpError(res, 400, 'invalid start date');
       return null;
     }
-    startDate = new Date(start);
+    startDate = new Date(startRaw);
     if (startDate < earliest) {
       httpError(res, 400, `start must be on or after ${earliest.toISOString()}`);
       return null;
@@ -292,12 +306,12 @@ function parseDateRange(req, res) {
       return null;
     }
   }
-  if (end) {
-    if (!DATE_RE.test(end) || isNaN(Date.parse(end))) {
+  if (endRaw) {
+    if (!DATE_RE.test(endRaw) || isNaN(Date.parse(endRaw))) {
       httpError(res, 400, 'invalid end date');
       return null;
     }
-    endDate = new Date(end);
+    endDate = new Date(endRaw);
     if (endDate < earliest) {
       httpError(res, 400, `end must be on or after ${earliest.toISOString()}`);
       return null;
@@ -334,6 +348,36 @@ function parseIncludeParam(val) {
   return result;
 }
 
+const PAGE_INFO_VERSION = 1;
+
+function base64UrlEncode(value) {
+  return Buffer.from(value, 'utf8')
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+function base64UrlDecode(value) {
+  const normalized = String(value).replace(/-/g, '+').replace(/_/g, '/');
+  const paddingLength = (4 - (normalized.length % 4)) % 4;
+  const padded = normalized + '='.repeat(paddingLength);
+  return Buffer.from(padded, 'base64').toString('utf8');
+}
+
+function encodePageInfoPayload(payload) {
+  return base64UrlEncode(JSON.stringify(payload));
+}
+
+function decodePageInfoPayload(raw) {
+  try {
+    const decoded = base64UrlDecode(raw);
+    return JSON.parse(decoded);
+  } catch (err) {
+    return null;
+  }
+}
+
 function parsePagination(req, res) {
   const hasLimit = req.query.limit !== undefined;
   const hasOffset = req.query.offset !== undefined;
@@ -359,19 +403,246 @@ function parsePagination(req, res) {
     }
     offset = parsed;
   }
-  return { limit, offset };
+
+  let cursorValues = null;
+  let cursorDirection = null;
+  let rawPageInfo = null;
+  if (req.query.page_info !== undefined) {
+    rawPageInfo = String(req.query.page_info || '');
+    const payload = decodePageInfoPayload(rawPageInfo);
+    if (!payload || payload.v !== PAGE_INFO_VERSION || typeof payload.values !== 'object' || !payload.dir) {
+      httpError(res, 400, 'page_info is invalid');
+      return null;
+    }
+    cursorDirection = payload.dir === 'prev' ? 'prev' : 'next';
+    cursorValues = payload.values || {};
+    if (payload.limit != null) {
+      const parsedLimit = Number(payload.limit);
+      if (!Number.isInteger(parsedLimit) || parsedLimit <= 0) {
+        httpError(res, 400, 'page_info limit is invalid');
+        return null;
+      }
+      if (limit != null && limit !== parsedLimit) {
+        httpError(res, 400, 'limit must match the value embedded in page_info');
+        return null;
+      }
+      limit = parsedLimit;
+    } else if (limit == null) {
+      httpError(res, 400, 'limit is required when using page_info');
+      return null;
+    }
+  }
+
+  if (cursorValues && hasOffset) {
+    httpError(res, 400, 'offset cannot be combined with page_info');
+    return null;
+  }
+
+  return {
+    limit,
+    offset,
+    cursorValues,
+    cursorDirection,
+    rawPageInfo,
+    usingPageInfo: cursorValues != null,
+  };
 }
 
-function withPagination(sql, params, pagination) {
-  if (!pagination || pagination.limit == null) {
-    return { sql, params };
+function flipSortDirection(direction = 'ASC') {
+  return String(direction).toUpperCase() === 'DESC' ? 'ASC' : 'DESC';
+}
+
+function comparatorForCursor(cursorDirection, sortDirection = 'ASC') {
+  const dir = String(sortDirection).toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+  if (cursorDirection === 'prev') {
+    return dir === 'DESC' ? '>' : '<';
   }
-  const limit = pagination.limit;
-  const offset = pagination.offset ?? 0;
+  return dir === 'DESC' ? '<' : '>';
+}
+
+function wrapSqlExpression(expr) {
+  const trimmed = expr.trim();
+  if (!trimmed.startsWith('(') && !trimmed.endsWith(')') && /[\s+]/.test(trimmed)) {
+    return `(${trimmed})`;
+  }
+  return trimmed;
+}
+
+function toSqlComparable(entry, rawValue) {
+  const transformer = entry && entry.toSqlValue ? entry.toSqlValue : ((value) => value);
+  return transformer(rawValue);
+}
+
+function buildCursorCondition(order, cursorValues, cursorDirection) {
+  if (!cursorValues) return null;
+  if (!order || !order.length) return null;
+  const sqlValues = order.map((entry) => {
+    if (!Object.prototype.hasOwnProperty.call(cursorValues, entry.name)) {
+      throw exposedError('page_info is invalid for this resource');
+    }
+    return toSqlComparable(entry, cursorValues[entry.name]);
+  });
+  const clauses = [];
+  const params = [];
+  for (let i = 0; i < order.length; i++) {
+    const entry = order[i];
+    const cmp = comparatorForCursor(cursorDirection, entry.direction);
+    const parts = [];
+    for (let j = 0; j < i; j++) {
+      parts.push(`${wrapSqlExpression(order[j].expression)} = ?`);
+      params.push(sqlValues[j]);
+    }
+    parts.push(`${wrapSqlExpression(entry.expression)} ${cmp} ?`);
+    params.push(sqlValues[i]);
+    clauses.push(`(${parts.join(' AND ')})`);
+  }
+  if (!clauses.length) return null;
   return {
-    sql: `${sql} LIMIT ? OFFSET ?`,
-    params: [...params, limit, offset],
+    sql: `(${clauses.join(' OR ')})`,
+    params,
   };
+}
+
+function encodePageInfoFromValues(direction, limit, values) {
+  const payload = { v: PAGE_INFO_VERSION, dir: direction, values: values || {} };
+  if (limit != null) {
+    payload.limit = limit;
+  }
+  return encodePageInfoPayload(payload);
+}
+
+function encodePageInfoFromRow(direction, limit, order, row) {
+  const values = {};
+  for (const entry of order) {
+    if (typeof entry.getValue !== 'function') {
+      throw new Error(`Order entry '${entry.name}' is missing getValue()`);
+    }
+    values[entry.name] = entry.getValue(row);
+  }
+  return encodePageInfoFromValues(direction, limit, values);
+}
+
+function createPaginatedQuery({ select, where = [], params = [], order = [], pagination = {} }) {
+  const clauses = [...where];
+  const queryParams = [...params];
+  const limit = pagination.limit != null ? pagination.limit : null;
+  let cursorDirection = null;
+  let usedCursor = false;
+
+  if (pagination.cursorValues) {
+    usedCursor = true;
+    cursorDirection = pagination.cursorDirection || 'next';
+    const cursorCondition = buildCursorCondition(order, pagination.cursorValues, cursorDirection);
+    if (cursorCondition) {
+      clauses.push(cursorCondition.sql);
+      queryParams.push(...cursorCondition.params);
+    }
+  }
+
+  const orderSpec = cursorDirection === 'prev'
+    ? order.map((entry) => ({ ...entry, direction: flipSortDirection(entry.direction || 'ASC') }))
+    : order;
+
+  let sql = select;
+  if (clauses.length) {
+    sql += ` WHERE ${clauses.join(' AND ')}`;
+  }
+  if (orderSpec.length) {
+    const orderClause = orderSpec
+      .map((entry) => `${entry.expression} ${(entry.direction || 'ASC')}`)
+      .join(', ');
+    sql += ` ORDER BY ${orderClause}`;
+  }
+
+  if (limit != null) {
+    const effectiveLimit = limit + 1;
+    sql += ` LIMIT ${effectiveLimit}`;
+    if (!usedCursor && pagination.offset != null) {
+      const offsetValue = Math.max(0, Number(pagination.offset) || 0);
+      sql += ` OFFSET ${offsetValue}`;
+    }
+  }
+
+  return { sql, params: queryParams, limit, cursorDirection, usedCursor };
+}
+
+function buildPaginationLinks({ req, limit, items, hasExtra, cursorDirection, usedCursor, pagination, order }) {
+  if (!items.length || limit == null) return [];
+
+  const baseParams = new URLSearchParams();
+  const originalQuery = req.query || {};
+  for (const [key, value] of Object.entries(originalQuery)) {
+    if (key === 'page_info' || key === 'offset' || key === 'limit') continue;
+    if (Array.isArray(value)) {
+      for (const v of value) {
+        if (v != null) baseParams.append(key, String(v));
+      }
+    } else if (value != null) {
+      baseParams.append(key, String(value));
+    }
+  }
+  baseParams.set('limit', String(limit));
+
+  let hasPrevLink = false;
+  let hasNextLink = false;
+  if (!usedCursor) {
+    hasPrevLink = pagination.offset != null && pagination.offset > 0;
+    hasNextLink = hasExtra;
+  } else if (cursorDirection === 'next') {
+    hasPrevLink = true;
+    hasNextLink = hasExtra;
+  } else if (cursorDirection === 'prev') {
+    hasPrevLink = hasExtra;
+    hasNextLink = true;
+  } else {
+    hasNextLink = hasExtra;
+  }
+
+  const links = [];
+  const path = `${req.baseUrl || ''}${req.path}`;
+
+  if (hasPrevLink && items.length) {
+    const token = encodePageInfoFromRow('prev', limit, order, items[0]);
+    const params = new URLSearchParams(baseParams.toString());
+    params.set('page_info', token);
+    const qs = params.toString();
+    links.push(`<${path}${qs ? `?${qs}` : ''}>; rel="previous"`);
+  }
+  if (hasNextLink && items.length) {
+    const token = encodePageInfoFromRow('next', limit, order, items[items.length - 1]);
+    const params = new URLSearchParams(baseParams.toString());
+    params.set('page_info', token);
+    const qs = params.toString();
+    links.push(`<${path}${qs ? `?${qs}` : ''}>; rel="next"`);
+  }
+  return links;
+}
+
+function applyPaginationResult({ req, res, rows, limit, cursorDirection, usedCursor, pagination = {}, order }) {
+  if (limit == null) {
+    return rows;
+  }
+  const hasExtra = rows.length > limit;
+  let items = rows.slice(0, limit);
+  if (cursorDirection === 'prev') {
+    items = items.reverse();
+  }
+  if (res) {
+    const links = buildPaginationLinks({
+      req,
+      limit,
+      items,
+      hasExtra,
+      cursorDirection,
+      usedCursor,
+      pagination,
+      order,
+    });
+    if (links.length) {
+      res.set('Link', links.join(', '));
+    }
+  }
+  return items;
 }
 
 function formatDateTime(date) {
@@ -574,7 +845,8 @@ const dateRangeParams = [
 const includeParam = { name:'include', in:'query', required:false, schema:{ type:'string' }, description:'Comma separated list of sub-resources to include, e.g. episodes,episodes.characters' };
 const paginationParams = [
   { name:'limit', in:'query', required:false, schema:{ type:'integer', minimum:1 }, description:'Maximum number of rows to return; omit to return all rows' },
-  { name:'offset', in:'query', required:false, schema:{ type:'integer', minimum:0, default:0 }, description:'Number of rows to skip before returning results (requires limit to be set)' }
+  { name:'offset', in:'query', required:false, schema:{ type:'integer', minimum:0, default:0 }, description:'Number of rows to skip before returning results (requires limit to be set)' },
+  { name:'page_info', in:'query', required:false, schema:{ type:'string' }, description:'Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)' }
 ];
 const defaultQueryParamSkipPaths = new Set(['/deployment-version', '/admin/database-dump']);
 for (const [path, ops] of Object.entries(openapiBase.paths)) {
@@ -642,6 +914,14 @@ app.post('/admin/reset-database', asyncH(async (_req, res) => {
 app.get('/admin/database-dump', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   const pagination = parsePagination(req, res); if (!pagination) return;
+  let offset = pagination.offset ?? 0;
+  if (pagination.cursorValues && Object.prototype.hasOwnProperty.call(pagination.cursorValues, 'offset')) {
+    const cursorOffset = Number(pagination.cursorValues.offset);
+    if (!Number.isInteger(cursorOffset) || cursorOffset < 0) {
+      return httpError(res, 400, 'page_info is invalid for this resource');
+    }
+    offset = cursorOffset;
+  }
   const queries = {
     actors: 'SELECT * FROM actors WHERE created_at BETWEEN ? AND ? ORDER BY id',
     shows: 'SELECT * FROM shows WHERE created_at BETWEEN ? AND ? ORDER BY id',
@@ -652,17 +932,66 @@ app.get('/admin/database-dump', asyncH(async (req, res) => {
   };
   try {
     const entries = [];
+    let hasMore = false;
     for (const [key, baseSql] of Object.entries(queries)) {
       const baseParams = [range.startSql, range.endSql];
       let sql = baseSql;
       if (pagination.limit != null) {
-        const { limit, offset } = pagination;
-        // mysql2 throws ER_WRONG_ARGUMENTS when binding limit/offset placeholders in some environments,
-        // so inline the validated integers instead of using parameter markers.
-        sql = `${baseSql} LIMIT ${limit} OFFSET ${offset ?? 0}`;
+        const effectiveLimit = pagination.limit + 1;
+        sql = `${baseSql} LIMIT ${effectiveLimit} OFFSET ${offset}`;
       }
-      const [rows] = await dbExecute(sql, baseParams);
-      entries.push([key, rows]);
+      let rows;
+      try {
+        [rows] = await dbExecute(sql, baseParams, { retry: false });
+      } catch (err) {
+        if (err && err.code === 'POOL_CLOSED') {
+          await refreshPool();
+          [rows] = await dbExecute(sql, baseParams, { retry: false });
+        } else {
+          throw err;
+        }
+      }
+      if (pagination.limit != null && rows.length > pagination.limit) {
+        hasMore ||= true;
+        entries.push([key, rows.slice(0, pagination.limit)]);
+      } else {
+        entries.push([key, rows]);
+      }
+    }
+    if (pagination.limit != null) {
+      const links = [];
+      const baseParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(req.query || {})) {
+        if (key === 'offset' || key === 'limit' || key === 'page_info') continue;
+        if (Array.isArray(value)) {
+          for (const v of value) {
+            if (v != null) baseParams.append(key, String(v));
+          }
+        } else if (value != null) {
+          baseParams.append(key, String(value));
+        }
+      }
+      baseParams.set('limit', String(pagination.limit));
+      const path = `${req.baseUrl || ''}${req.path}`;
+      if (offset > 0) {
+        const previousOffset = Math.max(offset - pagination.limit, 0);
+        const prevToken = encodePageInfoFromValues('prev', pagination.limit, { offset: previousOffset });
+        const params = new URLSearchParams(baseParams.toString());
+        params.set('page_info', prevToken);
+        const qs = params.toString();
+        links.push(`<${path}${qs ? `?${qs}` : ''}>; rel="previous"`);
+      }
+      if (hasMore) {
+        const nextOffset = offset + pagination.limit;
+        const nextToken = encodePageInfoFromValues('next', pagination.limit, { offset: nextOffset });
+        const params = new URLSearchParams(baseParams.toString());
+        params.set('page_info', nextToken);
+        const qs = params.toString();
+        links.push(`<${path}${qs ? `?${qs}` : ''}>; rel="next"`);
+      }
+      if (links.length) {
+        res.set('Link', links.join(', '));
+      }
     }
     res.json(Object.fromEntries(entries));
   } catch (err) {
@@ -844,6 +1173,11 @@ app.post('/admin/database-import', asyncH(async (req, res) => {
 }));
 
 // --------------------------- ACTORS ---------------------------
+const ACTOR_LIST_ORDER = [
+  { name: 'name', expression: 'name', direction: 'ASC', getValue: (row) => row.name ?? '', toSqlValue: (value) => value ?? '' },
+  { name: 'id', expression: 'id', direction: 'ASC', getValue: (row) => row.id }
+];
+
 app.post('/actors', asyncH(async (req, res) => {
   const { name } = req.body;
   if (!name) return httpError(res, 400, 'name is required');
@@ -858,13 +1192,25 @@ app.post('/actors', asyncH(async (req, res) => {
 app.get('/actors', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   const pagination = parsePagination(req, res); if (!pagination) return;
-  const query = withPagination(
-    'SELECT * FROM actors WHERE created_at BETWEEN ? AND ? ORDER BY name',
-    [range.startSql, range.endSql],
-    pagination
-  );
-  const [rows] = await dbExecute(query.sql, query.params);
-  res.json(rows);
+  const queryInfo = createPaginatedQuery({
+    select: 'SELECT * FROM actors',
+    where: ['created_at BETWEEN ? AND ?'],
+    params: [range.startSql, range.endSql],
+    order: ACTOR_LIST_ORDER,
+    pagination,
+  });
+  const [rows] = await dbExecute(queryInfo.sql, queryInfo.params);
+  const data = applyPaginationResult({
+    req,
+    res,
+    rows,
+    limit: queryInfo.limit,
+    cursorDirection: queryInfo.cursorDirection,
+    usedCursor: queryInfo.usedCursor,
+    pagination,
+    order: ACTOR_LIST_ORDER,
+  });
+  res.json(data);
 }));
 
 app.get('/actors/:id', asyncH(async (req, res) => {
@@ -905,7 +1251,12 @@ app.get('/shows', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   const include = parseIncludeParam(req.query.include);
   const pagination = parsePagination(req, res); if (!pagination) return;
-  const rows = await runShowQuery({ startSql: range.startSql, endSql: range.endSql }, include, pagination);
+  const rows = await runShowQuery(
+    { startSql: range.startSql, endSql: range.endSql },
+    include,
+    pagination,
+    { req, res }
+  );
   res.json(rows);
 }));
 
@@ -949,16 +1300,33 @@ app.post('/shows/:showId/seasons', asyncH(async (req, res) => {
   res.status(201).json(rows[0]);
 }));
 
+const SEASON_LIST_ORDER = [
+  { name: 'season_number', expression: 'season_number', direction: 'ASC', getValue: (row) => row.season_number },
+  { name: 'id', expression: 'id', direction: 'ASC', getValue: (row) => row.id }
+];
+
 app.get('/shows/:showId/seasons', asyncH(async (req, res) => {
   const range = parseDateRange(req, res); if (!range) return;
   const pagination = parsePagination(req, res); if (!pagination) return;
-  const query = withPagination(
-    'SELECT * FROM seasons WHERE show_id=? AND created_at BETWEEN ? AND ? ORDER BY season_number',
-    [req.params.showId, range.startSql, range.endSql],
-    pagination
-  );
-  const [rows] = await dbExecute(query.sql, query.params);
-  res.json(rows);
+  const queryInfo = createPaginatedQuery({
+    select: 'SELECT * FROM seasons',
+    where: ['show_id=?', 'created_at BETWEEN ? AND ?'],
+    params: [req.params.showId, range.startSql, range.endSql],
+    order: SEASON_LIST_ORDER,
+    pagination,
+  });
+  const [rows] = await dbExecute(queryInfo.sql, queryInfo.params);
+  const data = applyPaginationResult({
+    req,
+    res,
+    rows,
+    limit: queryInfo.limit,
+    cursorDirection: queryInfo.cursorDirection,
+    usedCursor: queryInfo.usedCursor,
+    pagination,
+    order: SEASON_LIST_ORDER,
+  });
+  res.json(data);
 }));
 
 app.get('/seasons/:id', asyncH(async (req, res) => {
@@ -1021,7 +1389,8 @@ app.get('/shows/:showId/episodes', asyncH(async (req, res) => {
   const rows = await runEpisodeQuery(
     { show_id: req.params.showId, startSql: range.startSql, endSql: range.endSql },
     include,
-    pagination
+    pagination,
+    { req, res }
   );
   res.json(rows);
 }));
@@ -1036,7 +1405,8 @@ app.get('/seasons/:id/episodes', asyncH(async (req, res) => {
   const rows = await runEpisodeQuery(
     { season_id: req.params.id, startSql: range.startSql, endSql: range.endSql },
     include,
-    pagination
+    pagination,
+    { req, res }
   );
   res.json(rows);
 }));
@@ -1051,7 +1421,8 @@ app.get('/shows/:showId/seasons/:seasonNumber/episodes', asyncH(async (req, res)
   const rows = await runEpisodeQuery(
     { season_id: seasonId, startSql: range.startSql, endSql: range.endSql },
     include,
-    pagination
+    pagination,
+    { req, res }
   );
   res.json(rows);
 }));
@@ -1136,7 +1507,8 @@ app.get('/shows/:showId/characters', asyncH(async (req, res) => {
   const rows = await runCharacterQuery(
     { show_id: req.params.showId, startSql: range.startSql, endSql: range.endSql },
     include,
-    pagination
+    pagination,
+    { req, res }
   );
   res.json(rows);
 }));
@@ -1274,17 +1646,27 @@ app.get('/episodes/:episodeId/characters', asyncH(async (req, res) => {
   if (!ep) return httpError(res, 404, 'episode not found');
   const include = parseIncludeParam(req.query.include);
   const pagination = parsePagination(req, res); if (!pagination) return;
-  const query = withPagination(
-    `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name
+  const queryInfo = createPaginatedQuery({
+    select: `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name
      FROM episode_characters ec
      JOIN characters c ON c.id = ec.character_id
-     LEFT JOIN actors a ON a.id = c.actor_id
-     WHERE ec.episode_id = ? AND ec.created_at BETWEEN ? AND ?
-     ORDER BY c.name`,
-    [ep.episode_id, range.startSql, range.endSql],
-    pagination
-  );
-  const [rows] = await dbExecute(query.sql, query.params);
+     LEFT JOIN actors a ON a.id = c.actor_id`,
+    where: ['ec.episode_id = ?', 'ec.created_at BETWEEN ? AND ?'],
+    params: [ep.episode_id, range.startSql, range.endSql],
+    order: CHARACTER_LIST_ORDER,
+    pagination,
+  });
+  const [rawRows] = await dbExecute(queryInfo.sql, queryInfo.params);
+  const rows = applyPaginationResult({
+    req,
+    res,
+    rows: rawRows,
+    limit: queryInfo.limit,
+    cursorDirection: queryInfo.cursorDirection,
+    usedCursor: queryInfo.usedCursor,
+    pagination,
+    order: CHARACTER_LIST_ORDER,
+  });
   if (include.actor) {
     const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))];
     let actorsMap = {};
@@ -1423,7 +1805,19 @@ function enqueueJob({ type, delay, run }) {
   }, job.eta_ms);
   return job;
 }
-async function runShowQuery(filters = {}, include = {}, pagination) {
+const SHOW_LIST_ORDER = [
+  {
+    name: 'year',
+    expression: 'COALESCE(year, 2147483647)',
+    direction: 'ASC',
+    getValue: (row) => row.year,
+    toSqlValue: (value) => (value == null ? 2147483647 : value),
+  },
+  { name: 'title', expression: 'title', direction: 'ASC', getValue: (row) => row.title ?? '' },
+  { name: 'id', expression: 'id', direction: 'ASC', getValue: (row) => row.id }
+];
+
+async function runShowQuery(filters = {}, include = {}, pagination, pageContext = null) {
   const where = [];
   const params = [];
   if (filters.id != null) { where.push('id = ?'); params.push(filters.id); }
@@ -1438,15 +1832,31 @@ async function runShowQuery(filters = {}, include = {}, pagination) {
     where.push('created_at BETWEEN ? AND ?');
     params.push(filters.startSql, filters.endSql);
   }
-  const baseSql = `SELECT id, title, description, year FROM shows ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY year IS NULL, year, title`;
-  const query = withPagination(baseSql, params, pagination);
+  const paginationInfo = pagination || {};
+  const query = createPaginatedQuery({
+    select: `SELECT id, title, description, year FROM shows`,
+    where,
+    params,
+    order: SHOW_LIST_ORDER,
+    pagination: paginationInfo,
+  });
   const [rows] = await dbExecute(query.sql, query.params);
-  if (include.episodes) {
-    for (const show of rows) {
+  const pagedRows = applyPaginationResult({
+    req: pageContext?.req || null,
+    res: pageContext?.res || null,
+    rows,
+    limit: query.limit,
+    cursorDirection: query.cursorDirection,
+    usedCursor: query.usedCursor,
+    pagination: paginationInfo,
+    order: SHOW_LIST_ORDER,
+  });
+  if (include.episodes && pagedRows.length) {
+    for (const show of pagedRows) {
       show.episodes = await runEpisodeQuery({ show_id: show.id }, include.episodes);
     }
   }
-  return rows;
+  return pagedRows;
 }
 
 async function runSeasonQuery(filters){
@@ -1461,7 +1871,18 @@ async function runSeasonQuery(filters){
   return rows;
 }
 
-async function runEpisodeQuery(filters = {}, include = {}, pagination) {
+const EPISODE_LIST_ORDER = [
+  {
+    name: 'air_date',
+    expression: "COALESCE(e.air_date, '9999-12-31')",
+    direction: 'ASC',
+    getValue: (row) => row.air_date,
+    toSqlValue: (value) => (value == null ? '9999-12-31' : value),
+  },
+  { name: 'id', expression: 'e.id', direction: 'ASC', getValue: (row) => row.id }
+];
+
+async function runEpisodeQuery(filters = {}, include = {}, pagination, pageContext = null) {
   const where = [];
   const params = [];
   if (filters.id != null) { where.push('e.id = ?'); params.push(filters.id); }
@@ -1477,11 +1898,27 @@ async function runEpisodeQuery(filters = {}, include = {}, pagination) {
     where.push('e.created_at BETWEEN ? AND ?');
     params.push(filters.startSql, filters.endSql);
   }
-  const baseSql = `SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id = e.season_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY e.air_date IS NULL, e.air_date, e.id`;
-  const query = withPagination(baseSql, params, pagination);
+  const paginationInfo = pagination || {};
+  const query = createPaginatedQuery({
+    select: `SELECT e.id, e.season_id, s.show_id, s.season_number, e.air_date, e.title, e.description FROM episodes e JOIN seasons s ON s.id = e.season_id`,
+    where,
+    params,
+    order: EPISODE_LIST_ORDER,
+    pagination: paginationInfo,
+  });
   const [rows] = await dbExecute(query.sql, query.params);
-  if (include.characters && rows.length) {
-    const episodeIds = rows.map(r => r.id);
+  const pagedRows = applyPaginationResult({
+    req: pageContext?.req || null,
+    res: pageContext?.res || null,
+    rows,
+    limit: query.limit,
+    cursorDirection: query.cursorDirection,
+    usedCursor: query.usedCursor,
+    pagination: paginationInfo,
+    order: EPISODE_LIST_ORDER,
+  });
+  if (include.characters && pagedRows.length) {
+    const episodeIds = pagedRows.map(r => r.id);
     const [chars] = await dbQuery(
       `SELECT ec.episode_id, c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name
        FROM episode_characters ec
@@ -1498,14 +1935,19 @@ async function runEpisodeQuery(filters = {}, include = {}, pagination) {
         arr.push({ id: c.id, show_id: c.show_id, name: c.name, actor_id: c.actor_id, actor_name: c.actor_name });
       }
     }
-    for (const ep of rows) {
+    for (const ep of pagedRows) {
       ep.characters = grouped[ep.id] || [];
     }
   }
-  return rows;
+  return pagedRows;
 }
 
-async function runCharacterQuery(filters = {}, include = {}, pagination) {
+const CHARACTER_LIST_ORDER = [
+  { name: 'name', expression: 'c.name', direction: 'ASC', getValue: (row) => row.name ?? '', toSqlValue: (value) => value ?? '' },
+  { name: 'id', expression: 'c.id', direction: 'ASC', getValue: (row) => row.id }
+];
+
+async function runCharacterQuery(filters = {}, include = {}, pagination, pageContext = null) {
   const where = [];
   const params = [];
   if (filters.id != null) { where.push('c.id = ?'); params.push(filters.id); }
@@ -1517,21 +1959,37 @@ async function runCharacterQuery(filters = {}, include = {}, pagination) {
     where.push('c.created_at BETWEEN ? AND ?');
     params.push(filters.startSql, filters.endSql);
   }
-  const baseSql = `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY c.name`;
-  const query = withPagination(baseSql, params, pagination);
+  const paginationInfo = pagination || {};
+  const query = createPaginatedQuery({
+    select: `SELECT c.id, c.show_id, c.name, c.actor_id, a.name AS actor_name FROM characters c LEFT JOIN actors a ON a.id=c.actor_id`,
+    where,
+    params,
+    order: CHARACTER_LIST_ORDER,
+    pagination: paginationInfo,
+  });
   const [rows] = await dbExecute(query.sql, query.params);
-  if (include.actor && rows.length) {
-    const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))];
+  const pagedRows = applyPaginationResult({
+    req: pageContext?.req || null,
+    res: pageContext?.res || null,
+    rows,
+    limit: query.limit,
+    cursorDirection: query.cursorDirection,
+    usedCursor: query.usedCursor,
+    pagination: paginationInfo,
+    order: CHARACTER_LIST_ORDER,
+  });
+  if (include.actor && pagedRows.length) {
+    const actorIds = [...new Set(pagedRows.map(r => r.actor_id).filter(Boolean))];
     let actorsMap = {};
     if (actorIds.length) {
       const [actors] = await dbQuery(`SELECT id, name FROM actors WHERE id IN (${actorIds.map(() => '?').join(',')})`, actorIds);
       actorsMap = Object.fromEntries(actors.map(a => [a.id, a]));
     }
-    for (const r of rows) {
+    for (const r of pagedRows) {
       r.actor = r.actor_id ? actorsMap[r.actor_id] || { id: r.actor_id, name: r.actor_name } : null;
     }
   }
-  return rows;
+  return pagedRows;
 }
 
 async function runActorQuery(filters){

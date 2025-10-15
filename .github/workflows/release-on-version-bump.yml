@@ -53,3 +53,93 @@ jobs:
           body: |
             Automated release for version ${{ steps.current.outputs.version }}.
           generate_release_notes: true
+
+      - name: Prune old patch releases for this major/minor line
+        if: steps.detect.outputs.changed == 'true' && steps.current.outputs.version != ''
+        env:
+          TARGET_VERSION: ${{ steps.current.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          version="${TARGET_VERSION}"
+          if [[ "$version" != *.*.* ]]; then
+            echo "Version '$version' does not match <major>.<minor>.<patch>; skipping pruning." >&2
+            exit 0
+          fi
+
+          IFS='.' read -r major minor patch <<<"$version"
+          patch="${patch%%-*}" # strip any pre-release suffix
+
+          if [[ -z "$major" || -z "$minor" || -z "$patch" ]]; then
+            echo "Unable to parse version components from '$version'; skipping pruning." >&2
+            exit 0
+          fi
+
+          if ! [[ "$major" =~ ^[0-9]+$ && "$minor" =~ ^[0-9]+$ && "$patch" =~ ^[0-9]+$ ]]; then
+            echo "Version components must be numeric; skipping pruning for '$version'." >&2
+            exit 0
+          fi
+
+          prefix="v${major}.${minor}."
+          git fetch --tags origin
+
+          mapfile -t matching_tags < <(git tag -l "${prefix}*" | sort -V -r || true)
+
+          keep_count=5
+          total=${#matching_tags[@]}
+
+          if (( total == 0 )); then
+            echo "No tags found matching ${prefix}*; nothing to prune."
+            exit 0
+          fi
+
+          if (( total <= keep_count )); then
+            echo "Found ${total} tag(s) matching ${prefix}*; within keep threshold (${keep_count})."
+            exit 0
+          fi
+
+          if command -v gh >/dev/null 2>&1; then
+            gh_cmd=true
+          else
+            gh_cmd=false
+            echo "'gh' CLI not available; releases (if any) will not be deleted automatically." >&2
+          fi
+
+          repo="${GITHUB_REPOSITORY:-}"
+
+          for tag in "${matching_tags[@]:keep_count}"; do
+            echo "Pruning old tag ${tag}"
+            deleted=false
+
+            if $gh_cmd; then
+              if gh release delete "$tag" --cleanup-tag --yes >/dev/null 2>&1; then
+                echo "Deleted release and tag ${tag}"
+                deleted=true
+              fi
+            fi
+
+            if ! $deleted; then
+              # Fallback to deleting the git tag directly; if this fails we surface the error
+              if git push origin ":refs/tags/${tag}" >/dev/null 2>&1; then
+                echo "Deleted git tag ${tag}"
+                deleted=true
+              else
+                echo "Failed to delete git tag ${tag}" >&2
+              fi
+            fi
+
+            if ! $deleted && [[ -n "${GH_TOKEN:-}" && -n "$repo" ]]; then
+              echo "Attempting REST cleanup for ${tag}"
+              ref_path="tags/${tag}"
+              if curl -fsSL -X DELETE -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/${repo}/git/refs/${ref_path}" >/dev/null 2>&1; then
+                echo "Deleted git ref ${ref_path} via REST API"
+              else
+                echo "Failed to delete ref ${ref_path} via REST API" >&2
+              fi
+            fi
+          done
+
+          kept=("${matching_tags[@]:0:keep_count}")
+          echo "Kept recent tags: ${kept[*]}"

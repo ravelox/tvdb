@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "TV Shows API",
-    "version": "1.8.7",
+    "version": "1.8.8",
     "description": "CRUD for shows/seasons/episodes/characters/actors, episode↔character links, and query jobs."
   },
   "servers": [
@@ -214,6 +214,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       }
@@ -228,7 +237,18 @@
           "200": {
             "description": "Deployment version"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
+          }
+        ]
       }
     },
     "/init": {
@@ -304,6 +324,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ],
         "responses": {
@@ -382,6 +411,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -448,6 +486,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -530,6 +577,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -596,6 +652,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -678,6 +743,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -754,6 +828,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -836,6 +919,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -912,6 +1004,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -994,6 +1095,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -1070,6 +1180,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -1152,6 +1271,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -1294,6 +1422,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -1370,6 +1507,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       },
@@ -1448,6 +1594,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       }
@@ -1524,6 +1679,15 @@
               "default": 0
             },
             "description": "Number of rows to skip before returning results (requires limit to be set)"
+          },
+          {
+            "name": "page_info",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
       }

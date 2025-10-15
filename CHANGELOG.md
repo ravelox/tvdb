@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.8] - 2025-10-15
+### Added
+- Cursor-based pagination (`page_info` + `Link` headers) for every REST collection endpoint and `/admin/database-dump`, mirroring Shopify’s next/previous flow.
+- README and Postman updates illustrating how to follow `rel="next"`/`rel="previous"` cursors alongside existing limit/offset support.
+
+### Fixed
+- Cursor-enabled queries now inline validated `LIMIT`/`OFFSET` values to avoid `ER_WRONG_ARGUMENTS` errors on stricter MySQL servers.
+
 ## [1.8.7] - 2025-10-14
 ### Added
 - `/admin/database-dump` accepts `limit` and `offset` so administrators can export smaller slices of data while retaining the original payload shape.
@@ -11,7 +19,6 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - `scripts/docker-build.sh` no longer depends on Bash 4+ features (`mapfile`), allowing Docker image builds to run on macOS default shells.
-- Admin database dump pagination now inlines validated limits/offsets to work with stricter MySQL servers.
 
 ## [1.8.0] - 2025-10-23
 ### Added
