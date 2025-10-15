@@ -1,10 +1,5 @@
-version: "0.1.0"
+version: "0.2.0"
 type: DeclarativeSource
-
-check:
-  type: CheckStream
-  stream_names:
-    - shows
 
 spec:
   type: Spec
@@ -17,12 +12,41 @@ spec:
     properties:
       api_url:
         type: string
-        description: Base URL of the TVDB API.
+        description: Base URL of the TVDB API (for example, https://tvdb.internal/api).
+      api_token:
+        type: string
+        title: API Token
+        description: Optional API token that will be sent via the x-api-token header.
+        airbyte_secret: true
+
+check:
+  type: CheckStream
+  stream_names:
+    - shows
 
 definitions:
   base_requester:
     type: HttpRequester
-    url_base: "{{ config['api_url'] }}"
+    url_base: "{{ config['api_url'].rstrip('/') }}"
+    authenticator:
+      type: ApiKeyAuthenticator
+      header: x-api-token
+      api_token: "{{ config.get('api_token', '') }}"
+
+  default_paginator:
+    type: DefaultPaginator
+    page_size_option:
+      type: RequestOption
+      field_name: limit
+      inject_into: request_parameter
+    page_token_option:
+      type: RequestOption
+      field_name: offset
+      inject_into: request_parameter
+    pagination_strategy:
+      type: OffsetIncrement
+      page_size: 200
+
   streams:
     actors:
       type: DeclarativeStream
@@ -34,6 +58,8 @@ definitions:
           $ref: "#/definitions/base_requester"
           path: /actors
           http_method: GET
+        paginator:
+          $ref: "#/definitions/default_paginator"
         record_selector:
           type: RecordSelector
           extractor:
@@ -49,6 +75,12 @@ definitions:
               type: integer
             name:
               type: string
+            created_at:
+              type:
+                - string
+                - "null"
+              format: date-time
+
     shows:
       type: DeclarativeStream
       name: shows
@@ -59,6 +91,8 @@ definitions:
           $ref: "#/definitions/base_requester"
           path: /shows
           http_method: GET
+        paginator:
+          $ref: "#/definitions/default_paginator"
         record_selector:
           type: RecordSelector
           extractor:
@@ -75,9 +109,14 @@ definitions:
             title:
               type: string
             description:
-              type: string
+              type:
+                - string
+                - "null"
             year:
-              type: [integer, "null"]
+              type:
+                - integer
+                - "null"
+
     seasons:
       type: DeclarativeStream
       name: seasons
@@ -88,6 +127,8 @@ definitions:
           $ref: "#/definitions/base_requester"
           path: /shows/{{ stream_slice.show_id }}/seasons
           http_method: GET
+        paginator:
+          $ref: "#/definitions/default_paginator"
         record_selector:
           type: RecordSelector
           extractor:
@@ -114,7 +155,15 @@ definitions:
             season_number:
               type: integer
             year:
-              type: [integer, "null"]
+              type:
+                - integer
+                - "null"
+            created_at:
+              type:
+                - string
+                - "null"
+              format: date-time
+
     episodes:
       type: DeclarativeStream
       name: episodes
@@ -125,6 +174,8 @@ definitions:
           $ref: "#/definitions/base_requester"
           path: /shows/{{ stream_slice.show_id }}/episodes
           http_method: GET
+        paginator:
+          $ref: "#/definitions/default_paginator"
         record_selector:
           type: RecordSelector
           extractor:
@@ -150,13 +201,22 @@ definitions:
               type: integer
             season_id:
               type: integer
+            season_number:
+              type:
+                - integer
+                - "null"
             title:
               type: string
             description:
-              type: [string, "null"]
+              type:
+                - string
+                - "null"
             air_date:
-              type: [string, "null"]
+              type:
+                - string
+                - "null"
               format: date
+
     characters:
       type: DeclarativeStream
       name: characters
@@ -167,6 +227,8 @@ definitions:
           $ref: "#/definitions/base_requester"
           path: /shows/{{ stream_slice.show_id }}/characters
           http_method: GET
+        paginator:
+          $ref: "#/definitions/default_paginator"
         record_selector:
           type: RecordSelector
           extractor:
@@ -193,7 +255,13 @@ definitions:
             name:
               type: string
             actor_id:
-              type: [integer, "null"]
+              type:
+                - integer
+                - "null"
+            actor_name:
+              type:
+                - string
+                - "null"
 
 streams:
   - $ref: "#/definitions/streams/actors"
