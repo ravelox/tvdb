@@ -1652,6 +1652,56 @@
         ]
       }
     },
+    "/admin/fake-rate-limit": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get fake rate-limit configuration",
+        "responses": {
+          "200": {
+            "description": "Current fake rate-limit configuration"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update fake rate-limit configuration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "windowMs": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "reset": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated fake rate-limit configuration"
+          }
+        }
+      }
+    },
     "/shows/{showId}/seasons/{seasonNumber}/episodes": {
       "get": {
         "tags": [

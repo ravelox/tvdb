@@ -283,6 +283,45 @@ test('database administration endpoints', async (t) => {
   });
 });
 
+test('fake rate limiting can be toggled', async (t) => {
+  const enableRes = await fetch('http://localhost:3000/admin/fake-rate-limit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled: true, limit: 2, windowMs: 5000, reset: true })
+  });
+  assert.strictEqual(enableRes.status, 200);
+  const enableBody = await enableRes.json();
+  assert.deepStrictEqual(enableBody, { enabled: true, limit: 2, windowMs: 5000 });
+
+  const first = await fetch('http://localhost:3000/actors');
+  assert.strictEqual(first.status, 200);
+  assert.strictEqual(first.headers.get('x-ratelimit-limit'), '2');
+  assert.strictEqual(first.headers.get('x-ratelimit-remaining'), '1');
+
+  const second = await fetch('http://localhost:3000/actors');
+  assert.strictEqual(second.status, 200);
+  assert.strictEqual(second.headers.get('x-ratelimit-limit'), '2');
+  assert.strictEqual(second.headers.get('x-ratelimit-remaining'), '0');
+
+  const third = await fetch('http://localhost:3000/actors');
+  assert.strictEqual(third.status, 429);
+  assert.ok(third.headers.get('retry-after'));
+  const thirdBody = await third.json();
+  assert.strictEqual(thirdBody.error, 'rate limit exceeded');
+  assert.strictEqual(thirdBody.limit, 2);
+
+  const disableRes = await fetch('http://localhost:3000/admin/fake-rate-limit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled: false, reset: true })
+  });
+  assert.strictEqual(disableRes.status, 200);
+
+  const after = await fetch('http://localhost:3000/actors');
+  assert.strictEqual(after.status, 200);
+  assert.strictEqual(after.headers.get('x-ratelimit-limit'), null);
+});
+
 test('GET /deployment-version returns deployment metadata', async () => {
   const res = await fetch('http://localhost:3000/deployment-version');
   assert.strictEqual(res.status, 200);

@@ -76,6 +76,65 @@ const DB_RETRY_DELAY_MS = (() => {
 
 const jobs = new Map();
 
+const fakeRateLimitConfig = {
+  enabled: false,
+  limit: 100,
+  windowMs: 60 * 1000,
+};
+const fakeRateLimitBuckets = new Map();
+
+function clearFakeRateLimitBuckets() {
+  fakeRateLimitBuckets.clear();
+}
+
+function getFakeRateLimitKey(req) {
+  return req.get('x-api-token') || req.ip || 'global';
+}
+
+function applyFakeRateLimit(req, res, next) {
+  const path = req.path || req.originalUrl || '';
+  if (path.startsWith('/admin/fake-rate-limit')) {
+    return next();
+  }
+  if (!fakeRateLimitConfig.enabled) {
+    return next();
+  }
+
+  const limit = Number(fakeRateLimitConfig.limit);
+  const windowMs = Number(fakeRateLimitConfig.windowMs);
+  if (!Number.isFinite(limit) || limit <= 0 || !Number.isFinite(windowMs) || windowMs <= 0) {
+    return next();
+  }
+
+  const now = Date.now();
+  const key = getFakeRateLimitKey(req);
+  let bucket = fakeRateLimitBuckets.get(key);
+  if (!bucket || now >= bucket.resetAt) {
+    bucket = { count: 0, resetAt: now + windowMs };
+    fakeRateLimitBuckets.set(key, bucket);
+  }
+
+  bucket.count += 1;
+  const remaining = Math.max(limit - bucket.count, 0);
+
+  res.set('X-RateLimit-Limit', String(limit));
+  res.set('X-RateLimit-Remaining', String(remaining >= 0 ? remaining : 0));
+  res.set('X-RateLimit-Reset', String(Math.ceil(bucket.resetAt / 1000)));
+
+  if (bucket.count > limit) {
+    const retryAfter = Math.max(0, Math.ceil((bucket.resetAt - now) / 1000));
+    res.set('Retry-After', String(retryAfter));
+    return res.status(429).json({
+      error: 'rate limit exceeded',
+      retry_after: retryAfter,
+      limit,
+      window_ms: windowMs,
+    });
+  }
+
+  return next();
+}
+
 const RETRIABLE_DB_ERROR_CODES = new Set([
   'ECONNRESET',
   'ECONNREFUSED',
@@ -259,6 +318,8 @@ app.use((req, res, next) => {
   if (isPublicAuthPath(req.path)) return next();
   return apiTokenMiddleware(req, res, next);
 });
+
+app.use(applyFakeRateLimit);
 
 function httpError(res, code, message) { return res.status(code).json({ error: message }); }
 function exposedError(message) {
@@ -809,6 +870,10 @@ const openapiBase = {
     '/admin/reset-database': { post: { tags:['admin'], summary:'Reset database schema via API', responses:{ '200':{ description:'Reset' } } } },
     '/admin/database-dump': { get: { tags:['admin'], summary:'Export entire database contents', responses:{ '200':{ description:'Database dump' } } } },
     '/admin/database-import': { post: { tags:['admin'], summary:'Import database dump (upsert)', responses:{ '200':{ description:'Import completed' } } } },
+    '/admin/fake-rate-limit': {
+      get: { tags:['admin'], summary:'Get fake rate-limit configuration', responses:{ '200':{ description:'Current fake rate-limit configuration' } } },
+      post: { tags:['admin'], summary:'Update fake rate-limit configuration', responses:{ '200':{ description:'Updated fake rate-limit configuration' } } }
+    },
 
     '/actors': { get:{ tags:['actors'], summary:'List actors' }, post:{ tags:['actors'], summary:'Create actor' } },
     '/actors/{id}': { get:{ tags:['actors'], summary:'Get actor' }, put:{ tags:['actors'], summary:'Update actor' }, delete:{ tags:['actors'], summary:'Delete actor' }, parameters:[{ name:'id', in:'path', required:true, schema:{type:'integer'} }] },
@@ -872,7 +937,7 @@ const dumpFilterParams = [
   { name:'characterIds', in:'query', required:false, schema:{ type:'string' }, description:'Comma-separated list of character IDs to include along with their shows and actors' },
   { name:'actorIds', in:'query', required:false, schema:{ type:'string' }, description:'Comma-separated list of actor IDs to include; combine with other filters for precise exports' }
 ];
-const defaultQueryParamSkipPaths = new Set(['/deployment-version', '/admin/database-dump']);
+const defaultQueryParamSkipPaths = new Set(['/deployment-version', '/admin/database-dump', '/admin/fake-rate-limit']);
 for (const [path, ops] of Object.entries(openapiBase.paths)) {
   for (const [method, op] of Object.entries(ops)) {
     if (method === 'get' && !defaultQueryParamSkipPaths.has(path)) {
@@ -934,6 +999,55 @@ app.post('/admin/reset-database', asyncH(async (_req, res) => {
   await resetDatabase();
   await refreshPool();
   res.json({ status: 'reset' });
+}));
+
+app.get('/admin/fake-rate-limit', asyncH(async (_req, res) => {
+  res.json({
+    enabled: fakeRateLimitConfig.enabled,
+    limit: fakeRateLimitConfig.limit,
+    windowMs: fakeRateLimitConfig.windowMs,
+  });
+}));
+
+app.post('/admin/fake-rate-limit', asyncH(async (req, res) => {
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return httpError(res, 400, 'body must be an object');
+  }
+
+  const { enabled, limit, windowMs } = req.body;
+  const resetBuckets = req.body.reset === true || req.body.resetBuckets === true;
+
+  if (enabled !== undefined && typeof enabled !== 'boolean') {
+    return httpError(res, 400, 'enabled must be a boolean');
+  }
+  if (limit !== undefined) {
+    const parsedLimit = Number(limit);
+    if (!Number.isInteger(parsedLimit) || parsedLimit <= 0) {
+      return httpError(res, 400, 'limit must be a positive integer');
+    }
+    fakeRateLimitConfig.limit = parsedLimit;
+  }
+  if (windowMs !== undefined) {
+    const parsedWindow = Number(windowMs);
+    if (!Number.isInteger(parsedWindow) || parsedWindow <= 0) {
+      return httpError(res, 400, 'windowMs must be a positive integer');
+    }
+    fakeRateLimitConfig.windowMs = parsedWindow;
+  }
+
+  if (enabled !== undefined) {
+    fakeRateLimitConfig.enabled = enabled;
+  }
+
+  if (!fakeRateLimitConfig.enabled || resetBuckets) {
+    clearFakeRateLimitBuckets();
+  }
+
+  res.json({
+    enabled: fakeRateLimitConfig.enabled,
+    limit: fakeRateLimitConfig.limit,
+    windowMs: fakeRateLimitConfig.windowMs,
+  });
 }));
 
 app.get('/admin/database-dump', asyncH(async (req, res) => {

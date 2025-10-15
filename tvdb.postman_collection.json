@@ -55,6 +55,29 @@
           }
         },
         {
+          "name": "POST /admin/fake-rate-limit",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/fake-rate-limit",
+            "description": "Enable/disable synthetic rate limiting",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"limit\": 100,\n  \"windowMs\": 60000,\n  \"reset\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
           "name": "POST /admin/database-import",
           "request": {
             "method": "POST",

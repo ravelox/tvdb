@@ -187,6 +187,24 @@ Targets the running API at `$API_BASE_URL` (default `http://localhost:$PORT`) an
 invokes `POST /admin/reset-database` using the optional `$API_TOKEN` header.
 Make sure the server is running so reseed scripts start from an empty database.
 
+### Fake rate limiting (optional)
+
+The API can emit synthetic rate-limit headers (and optional 429 responses) for
+client testing. The feature is disabled by default; toggle it via the admin
+endpoint:
+
+```bash
+curl -s -X POST "$API/admin/fake-rate-limit" \
+  -H 'Content-Type: application/json' \
+  -d '{"enabled":true,"limit":100,"windowMs":60000,"reset":true}' | jq .
+
+# Disable and clear counters
+curl -s -X POST "$API/admin/fake-rate-limit" -H 'Content-Type: application/json' -d '{"enabled":false,"reset":true}' | jq .
+```
+
+When enabled, responses include `X-RateLimit-*` headers and return HTTP 429 with
+`Retry-After` once the configured limit is exceeded.
+
 ---
 
 ## Comprehensive cURL Test Cookbook
