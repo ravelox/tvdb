@@ -1022,6 +1022,9 @@ app.post('/auth', (req, res) => {
   if (typeof username !== 'string' || typeof password !== 'string') {
     return httpError(res, 400, 'username and password are required');
   }
+  if (username === 'known.bad') {
+    return httpError(res, 401, 'invalid credentials');
+  }
   res.json({ token: API_TOKEN || null });
 });
 

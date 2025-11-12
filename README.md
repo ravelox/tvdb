@@ -58,6 +58,7 @@ curl -s "$API/shows" -H "Authorization: Bearer $API_TOKEN" | jq .
 Unset `API_TOKEN` (and restart `npm start`) if you want to disable authentication locally.
 
 Need to retrieve the token programmatically? `POST /auth` with any JSON payload containing `username` and `password` (both strings) and the server will respond with `{"token":"<API_TOKEN value>"}`. The endpoint sits on the public allowlist so you can call it before adding auth headers elsewhere.
+If you send `username="known.bad"` the server deliberately returns `401 {"error":"invalid credentials"}` to mimic a failure case.
 
 **Background job retention**
 

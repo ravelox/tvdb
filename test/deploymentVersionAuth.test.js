@@ -73,3 +73,14 @@ test('POST /auth/ trailing slash still bypasses auth guard', async () => {
   const body = await res.json();
   assert.deepStrictEqual(body, { token: 'version-test-token' });
 });
+
+test('POST /auth rejects known.bad username', async () => {
+  const res = await fetch('http://localhost:3002/auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'known.bad', password: 'whatever' })
+  });
+  assert.strictEqual(res.status, 401);
+  const body = await res.json();
+  assert.deepStrictEqual(body, { error: 'invalid credentials' });
+});

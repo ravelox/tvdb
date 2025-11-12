@@ -288,6 +288,9 @@
           },
           "400": {
             "description": "Invalid body"
+          },
+          "401": {
+            "description": "Invalid credentials (username \"known.bad\")"
           }
         }
       }
