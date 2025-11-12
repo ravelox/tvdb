@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.12] - 2025-11-12
+### Added
+- Fake `/auth` endpoint that accepts any username/password combo, returns the configured API token as JSON, and is documented in the OpenAPI/README/Postman artifacts for easy scripting.
+- Airbyte connector manifest now retries HTTP 429 responses using the `RateLimitErrorHandler`, honoring `Retry-After` headers and a fixed backoff fallback.
+
+### Changed
+- Posting to `/auth` with `username="known.bad"` deliberately returns `401 {"error":"invalid credentials"}` so clients can exercise failure handling before storing a token.
+- `.env` is ignored by Git to prevent accidental commits of local secrets.
+
 ## [1.8.9] - 2025-10-15
 ### Added
 - `/admin/database-dump` accepts `showIds`, `seasonIds`, `episodeIds`, `characterIds`, and `actorIds` query filters and automatically scopes dependent records so exports can focus on specific shows or subsets of data.
