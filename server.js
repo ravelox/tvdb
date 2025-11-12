@@ -306,6 +306,7 @@ const PUBLIC_AUTH_PATHS = [
   /^\/openapi\.json$/,
   /^\/spec$/,
   /^\/\.well-known\/openapi\.json$/,
+  /^\/auth(?:\/|$)/,
   /^\/deployment-version$/
 ];
 function isPublicAuthPath(pathname) {
@@ -849,7 +850,7 @@ const openapiBase = {
   },
   servers: [], // populated dynamically per request
   tags: [
-    { name: 'health' }, { name: 'actors' }, { name: 'shows' }, { name: 'seasons' },
+    { name: 'health' }, { name: 'auth' }, { name: 'actors' }, { name: 'shows' }, { name: 'seasons' },
     { name: 'episodes' }, { name: 'characters' }, { name: 'links' }, { name: 'jobs' },
     { name: 'admin' }
   ],
@@ -866,6 +867,31 @@ const openapiBase = {
   paths: {
     '/health': { get: { tags:['health'], summary:'Service/DB health', responses:{ '200':{ description:'OK' } } } },
     '/deployment-version': { get: { tags:['health'], summary:'Get app deployment version', responses:{ '200':{ description:'Deployment version' } } } },
+    '/auth': {
+      post: {
+        tags:['auth'],
+        summary:'Fake credential exchange that returns the configured API token',
+        requestBody: {
+          required:true,
+          content:{
+            'application/json':{
+              schema:{
+                type:'object',
+                required:['username','password'],
+                properties:{
+                  username:{ type:'string' },
+                  password:{ type:'string' }
+                }
+              }
+            }
+          }
+        },
+        responses:{
+          '200':{ description:'Returns configured API token' },
+          '400':{ description:'Invalid body' }
+        }
+      }
+    },
     '/init': { post: { tags:['health'], summary:'Initialize DB/schema', responses:{ '200':{ description:'Initialized' } } } },
     '/admin/reset-database': { post: { tags:['admin'], summary:'Reset database schema via API', responses:{ '200':{ description:'Reset' } } } },
     '/admin/database-dump': { get: { tags:['admin'], summary:'Export entire database contents', responses:{ '200':{ description:'Database dump' } } } },
@@ -987,6 +1013,17 @@ app.get('/deployment-version', asyncH(async (_req, res) => {
     packageVersion: pkg.version
   });
 }));
+
+app.post('/auth', (req, res) => {
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return httpError(res, 400, 'body must be an object');
+  }
+  const { username, password } = req.body;
+  if (typeof username !== 'string' || typeof password !== 'string') {
+    return httpError(res, 400, 'username and password are required');
+  }
+  res.json({ token: API_TOKEN || null });
+});
 
 app.post('/init', asyncH(async (_req, res) => {
   await initDatabase();

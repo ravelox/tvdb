@@ -51,3 +51,25 @@ test('GET /deployment-version is public even when API token is required', async 
     packageVersion: pkg.version
   });
 });
+
+test('POST /auth returns token without API headers', async () => {
+  const res = await fetch('http://localhost:3002/auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'anyone', password: 'secret' })
+  });
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.deepStrictEqual(body, { token: 'version-test-token' });
+});
+
+test('POST /auth/ trailing slash still bypasses auth guard', async () => {
+  const res = await fetch('http://localhost:3002/auth/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'user', password: 'pw' })
+  });
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.deepStrictEqual(body, { token: 'version-test-token' });
+});

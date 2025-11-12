@@ -15,6 +15,9 @@
       "name": "health"
     },
     {
+      "name": "auth"
+    },
+    {
       "name": "actors"
     },
     {
@@ -249,6 +252,44 @@
             "description": "Opaque pagination cursor returned via Link headers (Shopify-style page_info parameter)"
           }
         ]
+      }
+    },
+    "/auth": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Fake credential exchange that returns the configured API token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns configured API token"
+          },
+          "400": {
+            "description": "Invalid body"
+          }
+        }
       }
     },
     "/init": {

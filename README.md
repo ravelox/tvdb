@@ -47,6 +47,18 @@ The server reads a handful of environment variables so you can mirror the produc
 
 > `/deployment-version` is intentionally left unauthenticated so load balancers and uptime checks can read the running build metadata even when the rest of the API is locked down with `API_TOKEN`.
 
+When `API_TOKEN` is enabled, every request outside the allowlist goes through the auth middleware before routing, so `curl "$API/shows"` (or any other endpoint) will return `{"error":"invalid api token"}` unless you pass the header:
+
+```bash
+curl -s "$API/shows" -H "x-api-token: $API_TOKEN" | jq .
+# or
+curl -s "$API/shows" -H "Authorization: Bearer $API_TOKEN" | jq .
+```
+
+Unset `API_TOKEN` (and restart `npm start`) if you want to disable authentication locally.
+
+Need to retrieve the token programmatically? `POST /auth` with any JSON payload containing `username` and `password` (both strings) and the server will respond with `{"token":"<API_TOKEN value>"}`. The endpoint sits on the public allowlist so you can call it before adding auth headers elsewhere.
+
 **Background job retention**
 
 | Variable | Default | Description |

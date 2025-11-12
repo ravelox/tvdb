@@ -36,6 +36,19 @@
       ]
     },
     {
+      "name": "auth",
+      "item": [
+        {
+          "name": "POST /auth",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth",
+            "description": "Fake credential exchange that returns the configured API token"
+          }
+        }
+      ]
+    },
+    {
       "name": "admin",
       "item": [
         {
@@ -51,30 +64,7 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/admin/database-dump",
-            "description": "Export entire database contents (supports limit/offset/page_info plus showIds, seasonIds, episodeIds, characterIds, and actorIds filters)"
-          }
-        },
-        {
-          "name": "POST /admin/fake-rate-limit",
-          "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/admin/fake-rate-limit",
-            "description": "Enable/disable synthetic rate limiting",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"enabled\": true,\n  \"limit\": 100,\n  \"windowMs\": 60000,\n  \"reset\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ]
+            "description": "Export entire database contents"
           }
         },
         {
@@ -83,6 +73,22 @@
             "method": "POST",
             "url": "{{baseUrl}}/admin/database-import",
             "description": "Import database dump (upsert)"
+          }
+        },
+        {
+          "name": "GET /admin/fake-rate-limit",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/fake-rate-limit",
+            "description": "Get fake rate-limit configuration"
+          }
+        },
+        {
+          "name": "POST /admin/fake-rate-limit",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/fake-rate-limit",
+            "description": "Update fake rate-limit configuration"
           }
         }
       ]
