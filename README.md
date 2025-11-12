@@ -132,6 +132,15 @@ To upgrade and ensure the namespace exists:
 ```bash
 helm upgrade --install tvdb charts/tvdb -n tvdb --create-namespace
 ```
+
+Need to expose the app through a static address? Override `appService.type` (e.g., `LoadBalancer` or `NodePort`) and add one or more `appService.externalIPs` entries so Kubernetes assigns those IPs through the rendered `tvdb-app` service:
+```yaml
+appService:
+  type: LoadBalancer
+  externalIPs:
+    - 203.0.113.42
+```
+
 If the install fails with a message like:
 ```
 PersistentVolume "tvdb-storage-pv" ... missing key "app.kubernetes.io/managed-by"

@@ -7,11 +7,17 @@ metadata:
     app: tvdb
     tier: app
 spec:
-  type: ClusterIP
+  type: {{ default "ClusterIP" .Values.appService.type }}
   ports:
   - name: tvdb-app-port
     protocol: TCP
     port: 3000
     targetPort: 3000
+  {{- with .Values.appService.externalIPs }}
+  externalIPs:
+  {{- range . }}
+    - {{ . | quote }}
+  {{- end }}
+  {{- end }}
   selector:
     app: tvdb

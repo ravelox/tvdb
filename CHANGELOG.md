@@ -3,6 +3,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Added
+- Helm `tvdb-app` service now accepts `appService.type` and `appService.externalIPs` overrides so deployments can publish a specific external IP without manual patches.
 
 ## [1.8.12] - 2025-11-12
 ### Added

@@ -14,6 +14,9 @@ app:
   apiToken: "1234567"
   adminUsername: "admin"
   adminPassword: "admin"
+appService:
+  type: ClusterIP
+  externalIPs: []
 storage:
   image:
     repository: mysql
