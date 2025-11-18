@@ -11,7 +11,7 @@ app:
   adminUsernameKey: admin-username
   adminPasswordKey: admin-password
   existingSecret: ""
-  apiToken: "1234567"
+  apiToken: ""
   adminUsername: "admin"
   adminPassword: "admin"
 appService:
